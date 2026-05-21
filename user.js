@@ -3,7 +3,7 @@ tg.expand();
 tg.enableClosingConfirmation();
 
 // আপনার ক্লাউডফ্লেয়ার ওয়ার্কারের আসল URL এখানে বসাবেন
-const WORKER_URL = "https://divine-lab-ced7.tirtharoyvuson.workers.dev/"; 
+const WORKER_URL = "https://polished-disk-2b4e.tirtharoyvuson.workers.dev/"; 
 
 let appState = {
     currentUser: null,
