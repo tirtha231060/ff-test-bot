@@ -1,0 +1,3058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+
+    <title>Battle Royale Tournament</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <script src='//libtl.com/sdk.js' data-zone='10639013' data-sdk='show_10639013'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="user.css">
+</head>
+<body>
+        <div class="container">
+        <div class="header" id="mainHeader"> 
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <h1>Battle Royale</h1>
+            </div>
+            <button class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+
+
+ 
+
+        <div class="premium-banner-container" id="premiumBannerSlider" style="display:none;">
+    <div id="bannerSlidesWrapper"></div>
+    <div class="banner-indicators" id="bannerIndicators"></div>
+</div>
+
+        
+        <div class="notice-banner" id="noticeBanner">
+    <div class="notice-icon-box">
+        <i class="fas fa-bullhorn"></i>
+    </div>
+    <div class="notice-tag">UPDATE</div>
+    <div class="notice-text-wrapper">
+        <p id="noticeText">Welcome to Battle Royale Tournament! Check out our new matches.</p>
+    </div>
+</div>
+
+       
+        <div class="section active" id="play-section">
+    
+    <div id="categoryGridView">
+        <h3 class="game-title-header">FREE FIRE</h3>
+        <div class="category-grid" id="categoryGridContainer">
+            </div>
+    </div>
+
+    <div id="matchListView" style="display: none;">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <button class="theme-toggle" onclick="backToCategories()" style="margin-right: 15px; color: var(--text-light); font-size: 20px;">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 class="section-title" id="selectedCategoryTitle" style="margin-bottom: 0;">Matches</h2>
+        </div>
+        
+        <div class="matches-container" id="matchesContainer">
+            <div class="no-data" id="noMatches">
+                <i class="fas fa-gamepad"></i>
+                <p>No matches found</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <div class="section" id="esports-section">
+            <h2 class="section-title">
+                <i class="fas fa-trophy"></i>
+                Esports Hub
+            </h2>
+            
+            <div class="esports-tabs">
+                <div class="esports-tab active" data-es-tab="matches">Matches</div>
+                <div class="esports-tab" data-es-tab="points">Points</div>
+                <div class="esports-tab" data-es-tab="history">History</div>
+            </div>
+            
+            <div class="esports-content active" id="esportsMatchesView">
+                <div class="no-data">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>No scheduled matches</p>
+                </div>
+            </div>
+
+            <div class="esports-content" id="esportsPointsView">
+                <div class="no-data">
+                    <i class="fas fa-list-ol"></i>
+                    <p>Points table empty</p>
+                </div>
+            </div>
+
+            <div class="esports-content" id="esportsHistoryView">
+    <div class="history-tabs" style="margin-bottom: 15px;">
+        <div class="history-tab active" id="esHistTab_all" onclick="switchEsportsHistoryTab('all')">All History</div>
+        <div class="history-tab" id="esHistTab_my" onclick="switchEsportsHistoryTab('my')">My History</div>
+    </div>
+
+    <div id="esportsHistoryListContainer">
+        <div class="no-data">
+            <i class="fas fa-history"></i>
+            <p>No tournament history</p>
+        </div>
+    </div>
+</div>
+
+        </div>
+
+        <div class="section" id="my-matches-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px;">
+        <h2 class="section-title" style="margin-bottom: 0;">
+            <i class="fas fa-history" style="color: var(--primary);"></i> My Matches
+        </h2>
+    </div>
+
+    <div class="my-match-stats" style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <div style="flex: 1; background: var(--card-light); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.2);">
+        <div style="font-size: 12px; color: var(--gray); font-weight: 700;">Matches Played</div>
+        <div id="dynamicMatchesPlayed" style="font-size: 22px; font-weight: 900; color: var(--primary);">0</div>
+    </div>
+    <div style="flex: 1; background: var(--card-light); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(16, 185, 129, 0.2);">
+        <div style="font-size: 12px; color: var(--gray); font-weight: 700;">Total Winnings</div>
+        <div id="dynamicTotalWinnings" style="font-size: 22px; font-weight: 900; color: var(--success);">৳0</div>
+    </div>
+</div>
+
+<div class="lb-tabs" id="myMatchesTabs" style="margin: 0 0 20px 0;">
+    <div class="lb-tab active" onclick="filterMyMatchesList('upcoming', this)">Upcoming</div>
+    <div class="lb-tab" onclick="filterMyMatchesList('playing', this)">Live</div>
+    <div class="lb-tab" onclick="filterMyMatchesList('ended', this)">History</div>
+</div>
+
+    
+    <div class="matches-container" id="myMatchesContainer">
+        <div class="no-data" id="noMyMatches" style="background: var(--card-light); border-radius: 16px; padding: 50px 20px; border: 1px dashed #cbd5e1;">
+            <div style="width: 70px; height: 70px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <i class="fas fa-ghost" style="font-size: 35px; color: var(--primary);"></i>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text-light);">No Upcoming Matches</h3>
+            <p style="font-size: 13px; color: var(--gray); margin-bottom: 25px;">You haven't registered for any battles yet. Ready to drop in?</p>
+            <button class="join-btn" onclick="switchSection('play')" style="padding: 10px 25px;">
+                <i class="fas fa-play"></i> Join a Match
+            </button>
+        </div>
+    </div>
+</div>
+
+        <div class="section" id="results-section">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 class="section-title" style="margin:0;">
+            <i class="fas fa-flag-checkered" style="color: var(--primary);"></i> Match Results
+        </h2>
+        <div class="search-box" style="position:relative;">
+            <i class="fas fa-search" style="position:absolute; left:12px; top:10px; color:var(--gray); font-size:12px;"></i>
+            <input type="text" id="searchResult" placeholder="Search match..." style="padding: 8px 15px 8px 32px; border-radius: 20px; border: 1px solid #e5e7eb; font-size:12px; outline:none; background: var(--card-light); color: var(--text-light); width: 140px;">
+        </div>
+    </div>
+
+            <div class="lb-tabs" style="margin: 0 0 20px 0;">
+        <div class="lb-tab active" data-filter="all">All</div>
+        <div class="lb-tab" data-filter="br">Battle Royale</div>
+        <div class="lb-tab" data-filter="squad">BR Survival</div>
+        <div class="lb-tab" data-filter="clash">Clash Squad</div>
+        <div class="lb-tab" data-filter="cs1v1">CS 1v1/2v2</div>
+        <div class="lb-tab" data-filter="lone">Lone Wolf</div>
+        <div class="lb-tab" data-filter="free">Free Match</div>
+    </div>
+
+
+    
+    <div class="matches-container" id="resultsContainer">
+        <div style="text-align:center; padding: 40px 20px; color: var(--gray);">
+            <i class="fas fa-spinner fa-spin" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
+            <p>Loading Results...</p>
+        </div>
+    </div>
+</div>
+
+     
+<div class="section" id="profile-section">
+    <div class="modern-profile-wrapper">
+        
+        <div class="mp-header">
+            <div class="mp-user-info">
+                <div class="mp-avatar-container">
+                    <div id="profileAvatarContainer">
+                        <i class="fas fa-user-circle" style="font-size: 80px; color: #cbd5e1;"></i>
+                    </div>
+                </div>
+                <h2 id="profileName">Loading...</h2>
+                <p id="profileUsername">@username</p>
+                <div class="mp-rank-tag">
+                    <span id="profileRankName">Bronze</span>
+                </div>
+                
+                <div class="mp-exp-box">
+                    <div class="mp-exp-header">
+                        <span>Level Progress</span>
+                        <span id="profileExpText" style="color: #fcd34d;">0 / 100</span>
+                    </div>
+                    <div class="mp-exp-track">
+                        <div class="mp-exp-fill" id="rankProgressBar" style="width: 0%;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mp-wallet-card">
+            <div class="mp-wallet-header">
+                <span><i class="fas fa-microchip" style="color: var(--primary); margin-right: 5px;"></i> Main Balance</span>
+            </div>
+            <div class="mp-wallet-balance" id="walletBalance">৳0.00</div>
+            
+            <div class="mp-btn-group">
+                <button class="mp-btn mp-btn-dep" id="depositBtn">
+                    <i class="fas fa-plus-circle"></i> Add Funds
+                </button>
+                <button class="mp-btn mp-btn-wit" id="withdrawBtn">
+                    <i class="fas fa-arrow-down"></i> Cashout
+                </button>
+            </div>
+        </div>
+
+        <div class="mp-stats-grid">
+            <div class="mp-stat-box">
+                <i class="fas fa-gamepad mp-stat-icon" style="color: #3b82f6;"></i>
+                <div class="mp-stat-val" id="statMatches">0</div>
+                <div class="mp-stat-label">Matches</div>
+            </div>
+            <div class="mp-stat-box">
+                <i class="fas fa-crosshairs mp-stat-icon" style="color: #ef4444;"></i>
+                <div class="mp-stat-val" id="statKills">0</div>
+                <div class="mp-stat-label">Kills</div>
+            </div>
+            <div class="mp-stat-box">
+                <i class="fas fa-trophy mp-stat-icon" style="color: #10b981;"></i>
+                <div class="mp-stat-val" id="statWins">0</div>
+                <div class="mp-stat-label">Wins</div>
+            </div>
+            <div class="mp-stat-box">
+                <i class="fas fa-coins mp-stat-icon" style="color: #f59e0b;"></i>
+                <div class="mp-stat-val" id="statCoins">0</div>
+                <div class="mp-stat-label">Coins</div>
+            </div>
+        </div>
+
+        <div class="mp-section-title">Quick Actions</div>
+        <div class="mp-action-grid">
+            <div class="mp-action-card" id="leaderboardBtn">
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);"><i class="fas fa-crown"></i></div>
+                <div class="mp-action-text">Leaderboard</div>
+            </div>
+            <div class="mp-action-card" id="luckyDrawMenuBtn">
+                <div class="mp-badge-hot">HOT</div>
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #ec4899, #be185d);"><i class="fas fa-ticket-alt"></i></div>
+                <div class="mp-action-text">Mega Draw</div>
+            </div>
+            <div class="mp-action-card" id="tasksBtn">
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);"><i class="fas fa-tasks"></i></div>
+                <div class="mp-action-text">Daily Quests</div>
+            </div>
+            <div class="mp-action-card" id="redeemBtn">
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);"><i class="fas fa-gift"></i></div>
+                <div class="mp-action-text">Promo Code</div>
+            </div>
+            
+            <div class="mp-action-card" id="freeCoinMenuBtn" style="grid-column: span 2; display: flex; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="mp-action-icon" style="background: linear-gradient(135deg, #10b981, #047857);"><i class="fas fa-play"></i></div>
+                    <div class="mp-action-text">Watch Ads for Free Coins</div>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+        </div>
+
+        <div class="mp-section-title">System & Logs</div>
+        <div class="mp-settings-list">
+            <div class="mp-list-item" id="historyBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-history" style="color:#64748b;"></i></div>
+                    Transactions
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+            <div class="mp-list-item" id="referBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-users" style="color:#0ea5e9;"></i></div>
+                    Refer Friends
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+            <div class="mp-list-item" id="rulesBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-book" style="color:#f59e0b;"></i></div>
+                    Terms & Rules
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+            <div class="mp-list-item" id="supportBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-headset" style="color:#10b981;"></i></div>
+                    Support Center
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+    <div class="footer">
+        <button class="footer-btn active" data-tab="play">
+            <i class="fas fa-play"></i>
+            <span>Play</span>
+        </button>
+        <button class="footer-btn" data-tab="esports">
+            <i class="fas fa-trophy"></i>
+            <span>Esports</span>
+        </button>
+        <button class="footer-btn" data-tab="my-matches">
+            <i class="fas fa-history"></i>
+            <span>My Matches</span>
+        </button>
+        <button class="footer-btn" data-tab="results">
+            <i class="fas fa-flag-checkered"></i>
+            <span>Results</span>
+        </button>
+        <button class="footer-btn" data-tab="profile">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="joinModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Join Match</h3>
+                <button class="close-modal" id="closeJoinModal">×</button>
+            </div>
+            
+            <div class="join-rules">
+                <i class="fas fa-info-circle"></i>
+                <span id="joinRulesText">Solo: 1 FF Name, Duo: 2 FF Names, Squad: 4 FF Names</span>
+            </div>
+            
+            <form id="joinForm">
+                <input type="hidden" id="selectedMatchId">
+                <input type="hidden" id="selectedMatchType">
+                
+                <div class="form-group">
+                    <label class="form-label">Join Type</label>
+                    <select class="form-input" id="joinType">
+                        <option value="solo">Solo</option>
+                        <option value="duo">Duo</option>
+                        <option value="squad">Squad</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Player Free Fire Names</label>
+                    <div class="player-names-container" id="playerNamesContainer">
+                        <input type="text" class="form-input player-name" placeholder="Enter FF Name" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="join-btn" style="width: 100%;">Join Match</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="participantsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Participants</h3>
+                <button class="close-modal" id="closeParticipantsModal">×</button>
+            </div>
+            
+            <div class="participants-list-container" id="participantsListContent">
+                </div>
+        </div>
+    </div>
+    
+    
+
+    <div class="modal-overlay" id="prizePoolModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Prize Breakdown</h3>
+                <button class="close-modal" id="closePrizePoolModal">×</button>
+            </div>
+            
+            <div id="prizePoolContent">
+                </div>
+        </div>
+    </div>
+    
+        <div class="modal-overlay" id="matchScoreboardModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-trophy" style="color: var(--warning); margin-right: 8px;"></i>
+                    Match Winners
+                </h3>
+                <button class="close-modal" id="closeMatchScoreboardModal">×</button>
+            </div>
+            
+            <div id="matchScoreboardContent" style="max-height: 400px; overflow-y: auto;">
+                </div>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="roomInfoModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Room Information</h3>
+                <button class="close-modal" id="closeRoomModal">×</button>
+            </div>
+            
+            <div class="room-info" style="flex-direction: column; border: none; padding-top: 0;">
+                <div class="room-field">
+                    <label>Room ID</label>
+                    <div class="value">
+                        <span id="roomIdDisplay">Waiting...</span>
+                        <button class="copy-btn" id="copyRoomIdBtn" data-text="">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="room-field">
+                    <label>Room Password</label>
+                    <div class="value">
+                        <span id="roomPasswordDisplay">Waiting...</span>
+                        <button class="copy-btn" id="copyRoomPassBtn" data-text="">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center; color: var(--warning);">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Do not share this information with others!</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section" id="leaderboard-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e5e7eb; color:var(--text-light); font-size:16px; width:42px; height:42px; border-radius:14px; margin-right:15px; cursor:pointer; transition: 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.03);">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 style="font-size:22px; font-weight:900; margin:0; letter-spacing:-0.5px; color:var(--text-light);">
+            Hall of <span style="color:var(--warning);">Fame</span>
+        </h2>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.05)); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 16px; padding: 12px 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.05);">
+        <i class="fas fa-gift" style="font-size: 28px; color: #f59e0b; animation: bounce 2s infinite;"></i>
+        <div>
+            <div style="font-size: 11px; font-weight: 900; color: #d97706; text-transform: uppercase; letter-spacing: 1px;">Season Rewards</div>
+            <div style="font-size: 12px; color: var(--gray); font-weight: 600; margin-top: 2px;">Top 3 players win exclusive prizes at the end of the month!</div>
+        </div>
+    </div>
+
+    <div class="lb-tabs" id="lbTabsContainer" style="margin: 0 0 15px 0;">
+        <div class="lb-tab active" onclick="loadLeaderboard('exp')"><i class="fas fa-star"></i> Top Rank</div>
+        <div class="lb-tab" onclick="loadLeaderboard('totalKills')"><i class="fas fa-crosshairs"></i> Top Kills</div>
+        <div class="lb-tab" onclick="loadLeaderboard('totalWins')"><i class="fas fa-trophy"></i> Top Wins</div>
+    </div>
+
+    <div class="search-box" style="position:relative; margin-bottom: 20px;">
+        <i class="fas fa-search" style="position:absolute; left:15px; top:14px; color:var(--gray); font-size:14px;"></i>
+        <input type="text" id="searchLeaderboard" placeholder="Search player by name..." style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 14px; border: 1px solid #e5e7eb; font-size:14px; outline:none; background: var(--card-light); color: var(--text-light); box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+    </div>
+
+    <div id="leaderboardContent" style="padding-bottom: 90px;"></div>
+
+    <div class="lb-sticky-footer" id="myRankFooter">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="my-rank-badge" id="myRankDisplay" style="font-size: 16px; padding: 6px 14px;">#--</div>
+            <div>
+                <div style="font-weight:800; font-size:12px; color:var(--gray); text-transform: uppercase;">Your Position</div>
+                <div style="font-size:16px; font-weight:900; color:white;" id="myRankScore">0 EXP</div>
+            </div>
+        </div>
+        <button onclick="shareMyRank()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); transition: 0.2s;">
+            <i class="fas fa-share-alt"></i> Share
+        </button>
+    </div>
+</div>
+
+
+
+    <div class="section" id="luckydraw-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:none; border:none; color:var(--text-light); font-size:20px; margin-right:15px; cursor:pointer;">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 style="font-size:20px; font-weight:600;">
+            <i class="fas fa-gift" style="color: #ec4899; margin-right: 8px;"></i> Lucky Draw
+        </h2>
+    </div>
+    
+        <div class="history-tabs" style="margin-bottom: 15px;">
+        <div class="history-tab active" id="ldTab_active" onclick="switchLdTab('active')">Active</div>
+        <div class="history-tab" id="ldTab_mytickets" onclick="switchLdTab('mytickets')">My Tickets</div>
+        <div class="history-tab" id="ldTab_history" onclick="switchLdTab('history')">History</div>
+    </div>
+
+    <div id="ldUserContent" style="text-align: center; padding: 10px 0;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 30px; color: var(--primary);"></i>
+        <p style="margin-top: 10px;">Loading Draw Details...</p>
+    </div>
+    
+    <div id="ldMyTicketsContent" style="display: none; max-height: calc(100vh - 150px); overflow-y: auto; padding-right: 5px;"></div>
+    
+    
+    <div id="ldHistoryContent" style="display: none; max-height: calc(100vh - 150px); overflow-y: auto; padding-right: 5px;">
+        </div>
+</div>
+
+    <div class="modal-overlay" id="redeemModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Redeem Code</h3>
+            <button class="close-modal" id="closeRedeemModal">×</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div class="form-group">
+                <label class="form-label">Enter Promo Code</label>
+                <input type="text" class="form-input" id="promoCodeInput" placeholder="Ex: PROMO2026">
+            </div>
+            <button class="join-btn" id="applyRedeemBtn" style="width: 100%;">Apply Code</button>
+        </div>
+
+        <div style="border-top: 1px solid #e5e7eb; padding-top: 15px;">
+            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--gray);">Redemption History</h4>
+            <div id="redeemHistoryList" style="max-height: 200px; overflow-y: auto;">
+                </div>
+        </div>
+    </div>
+</div>
+
+
+    <div class="modal-overlay" id="ldWinnersModal" style="z-index: 100000;">
+
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-trophy" style="color: #fbbf24; margin-right: 8px;"></i> Hall of Fame</h3>
+            <button class="close-modal" onclick="document.getElementById('ldWinnersModal').classList.remove('active')">×</button>
+        </div>
+        <div id="ldWinnersListContent" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+            </div>
+    </div>
+</div>
+
+    
+    
+    <div class="modal-overlay" id="referModal">
+    <div class="modal" style="padding: 20px;">
+        <div class="modal-header" style="margin-bottom: 10px;">
+            <h3 class="modal-title">
+                <i class="fas fa-handshake" style="color: var(--primary); margin-right: 8px;"></i> Refer & Earn
+            </h3>
+            <button class="close-modal" id="closeReferModal">×</button>
+        </div>
+        
+        <div class="refer-modal-content">
+            <div class="ref-hero">
+                <i class="fas fa-gift"></i>
+                <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 5px;">Invite Friends, Earn Cash!</h3>
+                <p style="font-size: 12px; color: var(--gray);">Get rewarded instantly when your friends join via your link.</p>
+            </div>
+
+            <div class="ref-stats-grid">
+                <div class="ref-stat-card">
+                    <div class="ref-stat-val" id="advRefTotal">0</div>
+                    <div class="ref-stat-label">Total Friends</div>
+                </div>
+                <div class="ref-stat-card">
+                    <div class="ref-stat-val earnings">৳<span id="advRefEarned">0</span></div>
+                    <div class="ref-stat-label">Total Earned</div>
+                </div>
+            </div>
+
+            <div class="ref-milestone-box">
+                <div class="ref-milestone-header">
+                    <span><i class="fas fa-star" style="margin-right: 5px;"></i> Next Milestone</span>
+                    <span id="refMilestoneText">0 / 5</span>
+                </div>
+                <div class="ref-progress-bg">
+                    <div class="ref-progress-fill" id="refProgressBar" style="width: 0%;"></div>
+                </div>
+                <div style="font-size: 10px; color: #b45309; margin-top: 8px; text-align: center; font-weight: 600;">
+                    Invite more friends to unlock special bonuses!
+                </div>
+            </div>
+
+            <div class="ref-link-area">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase;">Your Unique Link</div>
+                <div class="ref-link-display" id="referLinkText">https://t.me/Bot?start=123</div>
+                <div class="ref-btn-group">
+                    <button class="ref-btn ref-btn-copy" id="copyReferBtnAdvanced" data-text="">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <button class="ref-btn ref-btn-share" id="shareReferBtnAdvanced">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                </div>
+            </div>
+
+            <h4 style="font-size: 14px; font-weight: 800; margin-bottom: 10px; color: var(--gray);">Recent Referrals</h4>
+            <div class="ref-history-container" id="recentReferralsList">
+                <div style="text-align: center; padding: 20px; color: var(--gray); font-size: 12px;">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="modal-overlay" id="infoModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="infoModalTitle">Information</h3>
+                <button class="close-modal" id="closeInfoModal">×</button>
+            </div>
+            <div id="infoModalContent" style="line-height: 1.6; font-size: 14px;">
+                </div>
+        </div>
+    </div>
+
+    <div id="daily-task-section" class="task-page-wrapper" style="display: none;">
+    <div class="task-hero">
+        <div class="task-hero-bg"></div>
+        <div class="task-hero-content">
+            <button class="back-btn" onclick="closeDailyTask()"><i class="fas fa-arrow-left"></i></button>
+            <h2>Daily Missions</h2>
+            <div class="coin-balance">
+                <i class="fas fa-coins"></i> <span id="taskCoinBalance">1,250</span>
+            </div>
+        </div>
+        
+        <div class="streak-box">
+            <div class="streak-header">
+                <span><i class="fas fa-fire"></i> Weekly Streak</span>
+                <span>Day 3/7</span>
+            </div>
+            <div class="streak-progress-wrap">
+                <div class="streak-progress-fill" style="width: 42%;"></div>
+            </div>
+            <div class="streak-days">
+                <div class="day active"><i class="fas fa-check"></i></div>
+                <div class="day active"><i class="fas fa-check"></i></div>
+                <div class="day current">3</div>
+                <div class="day">4</div>
+                <div class="day">5</div>
+                <div class="day">6</div>
+                <div class="day gift"><i class="fas fa-gift"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="task-tabs">
+        <button class="task-tab active" data-filter="all">All Tasks</button>
+        <button class="task-tab" data-filter="pending">Pending</button>
+        <button class="task-tab" data-filter="completed">Completed</button>
+    </div>
+
+    <div class="task-list-container">
+        <div class="modern-task-card" data-status="pending">
+            <div class="task-icon bg-blue">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <div class="task-details">
+                <h4>Play 3 Matches</h4>
+                <p>Complete 3 matches in any mode.</p>
+                <div class="task-progress">
+                    <div class="tp-bar"><div class="tp-fill" style="width: 66%;"></div></div>
+                    <span class="tp-text">2/3</span>
+                </div>
+            </div>
+            <div class="task-action">
+                <div class="task-reward">+50 <i class="fas fa-coins"></i></div>
+                <button class="task-btn-modern go-btn">Go</button>
+            </div>
+        </div>
+
+        <div class="modern-task-card ready" data-status="pending">
+            <div class="task-icon bg-purple">
+                <i class="fas fa-user-friends"></i>
+            </div>
+            <div class="task-details">
+                <h4>Invite a Friend</h4>
+                <p>Share your referral link with a friend.</p>
+                <div class="task-progress">
+                    <div class="tp-bar"><div class="tp-fill" style="width: 100%;"></div></div>
+                    <span class="tp-text">1/1</span>
+                </div>
+            </div>
+            <div class="task-action">
+                <div class="task-reward">+100 <i class="fas fa-coins"></i></div>
+                <button class="task-btn-modern claim-btn" onclick="claimTask(this)">Claim</button>
+            </div>
+        </div>
+
+        <div class="modern-task-card completed" data-status="completed">
+            <div class="task-icon bg-green">
+                <i class="fas fa-sign-in-alt"></i>
+            </div>
+            <div class="task-details">
+                <h4>Daily Login</h4>
+                <p>Login to the app today.</p>
+            </div>
+            <div class="task-action">
+                <button class="task-btn-modern done-btn" disabled><i class="fas fa-check"></i> Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <div class="section" id="history-section">
+    <div class="history-wrapper">
+        <div style="display:flex; align-items:center; margin-bottom:25px; padding-top: 10px;">
+            <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e5e7eb; color:var(--text-light); font-size:16px; width:42px; height:42px; border-radius:14px; margin-right:15px; cursor:pointer; transition: 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.03);">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 style="font-size:24px; font-weight:900; margin:0; letter-spacing:-0.5px; color:var(--text-light);">
+                Transaction <span style="color:var(--primary);">History</span>
+            </h2>
+        </div>
+
+        <div class="premium-history-tabs">
+            <div class="p-hist-tab active" onclick="switchHistoryTab('deposit')"><i class="fas fa-arrow-down"></i> Deposit</div>
+            <div class="p-hist-tab" onclick="switchHistoryTab('match_entry')"><i class="fas fa-gamepad"></i> Entry</div>
+            <div class="p-hist-tab" onclick="switchHistoryTab('withdraw')"><i class="fas fa-arrow-up"></i> Withdraw</div>
+        </div>
+
+        <div class="history-summary-box">
+            <div class="history-summary-text"><i class="fas fa-chart-line" style="margin-right:5px; opacity:0.7;"></i> Total Records</div>
+            <div class="history-summary-val" id="txnTotalCount">0</div>
+        </div>
+
+        <div id="historyListContent" class="history-scroll-container">
+
+            </div>
+    </div>
+</div>
+
+
+    <div class="modal-overlay" id="esportsJoinModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Squad Registration</h3>
+                <button class="close-modal" id="closeEsportsJoinModal">×</button>
+            </div>
+            
+            <div class="join-rules">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>4 Players required per squad.</span>
+            </div>
+            
+            <form id="esportsJoinForm">
+                <input type="hidden" id="esportsSelectedMatchId">
+                
+                <div class="form-group">
+                    <label class="form-label">Squad Name</label>
+                    <input type="text" class="form-input" id="esportsSquadName" placeholder="Enter Team Name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Player 1 (Leader/You)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Player 2</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Player 3</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Player 4</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="join-btn" style="width: 100%;">Register Squad</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="esportsMatchPointsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Match Standings</h3>
+                <button class="close-modal" id="closeEsportsMatchPointsModal">×</button>
+            </div>
+            <div id="esportsMatchPointsContent">
+                </div>
+        </div>
+    </div>
+    
+    
+    <div class="modal-overlay" id="adsModal">
+    <div class="modal" style="text-align: center;">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-coins" style="color: var(--warning);"></i> Earn Free Coins</h3>
+            <button class="close-modal" id="closeAdsModal">×</button>
+        </div>
+        
+        <i class="fas fa-gift" style="font-size: 60px; color: var(--primary); margin: 20px 0;"></i>
+        <h4 style="margin-bottom: 10px;">Watch an Ad to get Coins!</h4>
+        <p style="color: var(--gray); font-size: 13px; margin-bottom: 25px;">
+            Click the button below, wait for the ad to finish, and return to claim <span id="adRewardDisplay" style="font-weight: bold; color: var(--warning);">0</span> Coins.
+        </p>
+
+        <button class="join-btn" id="startAdBtn" style="width: 100%; font-size: 16px; padding: 15px; background: linear-gradient(135deg, #f59e0b, #ea580c);">
+            <i class="fas fa-play"></i> Watch Ad Now
+        </button>
+
+        <div id="adTimerSection" style="display: none; margin-top: 15px;">
+            <div style="font-size: 24px; font-weight: bold; color: var(--primary);" id="adCountdown">15</div>
+            <p style="font-size: 12px; color: var(--gray);">Please wait...</p>
+        </div>
+    </div>
+</div>
+
+    <div class="modal-overlay" id="rulesModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-book" style="color: var(--primary); margin-right: 8px;"></i>
+                Tournament Rules
+            </h3>
+            <button class="close-modal" id="closeRulesModal">×</button>
+        </div>
+
+        <div class="rules-tabs-container" id="rulesTabsHeader">
+            </div>
+
+        <div id="rulesContentBody" class="rules-content-area">
+            <div class="no-rule-selected">
+                <i class="fas fa-hand-pointer" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5;"></i>
+                <p>Select a rule from the top to read.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="section" id="deposit-section">
+    <div style="display:flex; align-items:center; margin-bottom:25px; padding-top: 10px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e5e7eb; color:var(--text-light); font-size:16px; width:42px; height:42px; border-radius:14px; margin-right:15px; cursor:pointer; transition: 0.3s; box-shadow:0 4px 10px rgba(0,0,0,0.03);">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <h2 style="font-size:24px; font-weight:900; margin:0; letter-spacing:-0.5px; color:var(--text-light);">
+            Fund <span style="color:var(--primary);">Wallet</span>
+        </h2>
+    </div>
+
+    <div class="cyber-tracker">
+        <div class="cyber-line"><div class="cyber-line-fill" id="stepLineFill"></div></div>
+        
+        <div class="cyber-step active" id="step1Dot">
+            <div class="cyber-step-icon"><i class="fas fa-wallet"></i></div>
+            <div class="cyber-step-text">Method</div>
+        </div>
+        
+        <div class="cyber-step" id="step2Dot">
+            <div class="cyber-step-icon"><i class="fas fa-paper-plane"></i></div>
+            <div class="cyber-step-text">Payment</div>
+        </div>
+        
+        <div class="cyber-step" id="step3Dot">
+            <div class="cyber-step-icon"><i class="fas fa-shield-check"></i></div>
+            <div class="cyber-step-text">Verify</div>
+        </div>
+    </div>
+
+    <div id="depositStep1" style="animation: fadeSlideUp 0.4s ease-out forwards;">
+        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 14px; font-weight: 800; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px;">Select Gateway</h3>
+            <span style="font-size: 10px; background: rgba(16,185,129,0.1); color: #10b981; padding: 4px 8px; border-radius: 8px; font-weight: 800;"><i class="fas fa-bolt"></i> INSTANT</span>
+        </div>
+        
+        <div class="payment-grid-elite" id="paymentMethodsList">
+            <div style="grid-column: 1/-1; text-align:center; padding:40px; color: var(--gray);">
+                <i class="fas fa-circle-notch fa-spin" style="font-size: 30px; color: var(--primary);"></i>
+            </div>
+        </div>
+    </div>
+
+    <div id="depositStep2" style="display:none; animation: fadeSlideUp 0.4s ease-out forwards;">
+        
+        <div class="glass-receiver-card" id="paymentDetailsBox">
+            <div class="laser-scanner"></div>
+            <div class="fake-chip"></div>
+            
+            <div class="grc-header">
+                <i class="fas fa-circle"></i> <span>Send <span id="pmTypeDisplay">Personal</span> Money To</span>
+            </div>
+            
+            <div class="grc-number-display">
+                <span id="targetNumber">01xxxxxxxxx</span>
+                <button class="grc-copy-btn" id="copyNumberBtn" data-text="">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            
+            <div class="grc-footer">
+                <div class="grc-footer-item">
+                    <span class="grc-label">Minimum</span>
+                    <span class="grc-value">৳<span id="minDepDisplay">0</span></span>
+                </div>
+                <div class="grc-footer-item" style="text-align: right;">
+                    <span class="grc-label">Network</span>
+                    <span class="grc-value" style="color: #fff; font-size: 14px; margin-top: 2px;" id="networkNameDisplay">BKASH</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="font-size: 14px; font-weight: 800; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px;">Verify Transaction</h3>
+            <button onclick="resetDepositPage()" style="background: transparent; border: none; color: var(--primary); font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <i class="fas fa-edit"></i> Change
+            </button>
+        </div>
+
+        <form id="depositFormPage">
+            <input type="hidden" id="selectedMethodNamePage">
+            
+            <div class="floating-input-group">
+                <input type="number" class="floating-input" id="depositAmountPage" required>
+                <label class="floating-label"><i class="fas fa-coins" style="margin-right:5px;"></i>Amount Sent (৳)</label>
+            </div>
+            
+            <div class="floating-input-group">
+                <input type="text" class="floating-input" id="depositTrxIDPage" required>
+                <label class="floating-label"><i class="fas fa-fingerprint" style="margin-right:5px;"></i>Transaction ID (TrxID)</label>
+            </div>
+
+            <button type="submit" class="neon-submit-btn">
+                <i class="fas fa-rocket"></i> Confirm Deposit
+            </button>
+        </form>
+    </div>
+</div>
+
+
+
+<div class="section" id="withdraw-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px; padding-top: 10px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e2e8f0; color:var(--text-light); font-size:16px; width:40px; height:40px; border-radius:12px; margin-right:15px; cursor:pointer;">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <h2 style="font-size:22px; font-weight:800; margin:0; color:var(--text-light);">Cashout</h2>
+    </div>
+
+    <div class="fintech-wallet-card">
+        <div class="fwc-label">Available for Withdraw</div>
+        <div class="fwc-balance">
+            <span>৳</span><div id="cardWinningBalance">0.00</div>
+        </div>
+        <div class="fwc-footer">
+            <div style="font-size: 12px; font-weight: 800; color: #4ade80;"><i class="fas fa-check-circle"></i> Ready</div>
+            <div style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6);"><i class="fas fa-shield-alt"></i> Secure</div>
+        </div>
+    </div>
+
+    <div style="font-size: 14px; font-weight: 800; color: var(--text-light); margin-bottom: 12px;">Select Gateway</div>
+    <div class="method-grid-clean" id="withdrawMethodsGrid">
+        </div>
+
+   <div id="withdrawInputArea" style="display:none; animation: fadeIn 0.3s ease-out;">
+    <div style="font-size: 14px; font-weight: 800; margin-bottom: 12px; margin-top: 10px;">Withdraw Details</div>
+
+    <form id="withdrawFormPage">
+        <input type="hidden" id="selectedWithMethodName">
+        
+        <div class="clean-input-wrapper">
+            <i class="fas fa-phone-alt clean-input-icon"></i>
+            <input type="number" class="clean-input" id="withdrawNumberPage" placeholder="Account Number" required>
+        </div>
+
+        <div class="clean-input-wrapper">
+            <i class="fas fa-coins clean-input-icon"></i>
+            <input type="number" class="clean-input" id="withdrawAmountPage" placeholder="Amount (৳)" required>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-info-circle" style="color: #f59e0b; font-size: 18px;"></i>
+            <div style="font-size: 12px; font-weight: 700;">
+                Minimum withdraw limit: <span style="color: #f59e0b; font-weight: 900;">৳<span id="minWithDisplay">0</span></span>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-fintech">
+            Withdraw Now <i class="fas fa-arrow-right" style="font-size: 14px;"></i>
+        </button>
+    </form>
+</div>
+
+</div>
+
+
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCq_uq5vFAYxgbJHFZ7EEuR14MECBmjzGY",
+            authDomain: "fir-d1a84.firebaseapp.com",
+            databaseURL: "https://fir-d1a84-default-rtdb.firebaseio.com",
+            projectId: "fir-d1a84",
+            storageBucket: "fir-d1a84.firebasestorage.app",
+            messagingSenderId: "521723000669",
+            appId: "1:521723000669:web:aaa54efcee17b90841dab4",
+            measurementId: "G-63V90Y91GG"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+    /* --- 1. RGB বর্ডার অ্যানিমেশন --- */
+    @keyframes rgbFlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    /* --- 2. টেবিল স্ট্রাকচার --- */
+    .points-table {
+        border-collapse: separate; 
+        border-spacing: 0 4px; 
+        width: 100%;
+    }
+
+    .stream-card {
+        position: relative;
+    }
+
+    /* --- COLOR FIX HERE (সবচেয়ে গুরুত্বপূর্ণ পরিবর্তন) --- */
+    .stream-card td {
+        border: none !important;
+        padding: 12px 10px !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        vertical-align: middle;
+        position: relative;
+        z-index: 2;
+        
+        /* ডিফল্ট (লাইট মোড) - লেখা কালো হবে */
+        color: #000 !important; 
+        background: rgba(0,0,0,0.02); /* খুব হালকা ব্যাকগ্রাউন্ড */
+    }
+
+    /* ডার্ক মোড - লেখা সাদা হবে */
+    body.dark-mode .stream-card td {
+        color: #fff !important;
+        background: rgba(255,255,255,0.05); /* হালকা সাদা ভাব */
+    }
+    /* ---------------------------------------------------- */
+
+    .stream-card td:first-child { border-radius: 4px 0 0 4px; }
+    .stream-card td:last-child { border-radius: 0 4px 4px 0; }
+
+    /* --- 3. র‍্যাংক স্পেসিফিক ডিজাইন --- */
+
+    /* 🌈 RANK 1: RGB STREAM */
+    .rank-1 td {
+        /* লাইট মোডে ব্যাকগ্রাউন্ড */
+        background: linear-gradient(90deg, rgba(255,0,222,0.1), rgba(0,234,255,0.1)) !important;
+        box-shadow: inset 0 -3px 0 0 #ff00de; 
+    }
+    
+    /* ডার্ক মোডে Rank 1 এর ব্যাকগ্রাউন্ড একটু গাঢ় হবে */
+    body.dark-mode .rank-1 td {
+        background: linear-gradient(90deg, rgba(255,0,0,0.2), rgba(0,0,255,0.2)) !important;
+    }
+
+    .rank-1::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; width: 100%; height: 3px;
+        background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+        background-size: 400%;
+        animation: rgbFlow 3s linear infinite;
+        border-radius: 4px;
+        z-index: 5;
+    }
+
+    .rank-1 .rank-badge {
+        background: linear-gradient(135deg, #ff00de, #00eaff);
+        color: #fff; /* ব্যাজের লেখা সব সময় সাদা */
+        box-shadow: 0 0 5px rgba(255, 0, 222, 0.4);
+    }
+
+    /* ⚡ RANK 2: ELECTRIC STREAM */
+    .rank-2 td {
+        background: rgba(0, 234, 255, 0.05) !important;
+        box-shadow: inset 0 -3px 0 0 #00eaff;
+    }
+    
+    body.dark-mode .rank-2 td {
+        background: rgba(0, 234, 255, 0.1) !important;
+    }
+
+    .rank-2::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; width: 100%; height: 3px;
+        background: linear-gradient(90deg, #00eaff, #0078ff, #00eaff);
+        background-size: 200%;
+        animation: rgbFlow 2s linear infinite;
+        border-radius: 4px;
+        z-index: 5;
+    }
+
+    .rank-2 .rank-badge {
+        background: #00eaff;
+        color: #000; /* ব্যাজের লেখা কালো */
+        box-shadow: 0 0 5px rgba(0, 234, 255, 0.4);
+    }
+
+    /* 🔥 RANK 3: FIRE STREAM */
+    .rank-3 td {
+        background: rgba(255, 69, 0, 0.05) !important;
+        box-shadow: inset 0 -3px 0 0 #ff4500;
+    }
+
+    body.dark-mode .rank-3 td {
+        background: rgba(255, 69, 0, 0.1) !important;
+    }
+
+    .rank-3::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; width: 100%; height: 3px;
+        background: linear-gradient(90deg, #ff4500, #ffae00, #ff4500);
+        background-size: 200%;
+        animation: rgbFlow 2.5s linear infinite;
+        border-radius: 4px;
+        z-index: 5;
+    }
+
+    .rank-3 .rank-badge {
+        background: #ff4500;
+        color: #fff;
+        box-shadow: 0 0 5px rgba(255, 69, 0, 0.4);
+    }
+
+    /* র‍্যাংক ব্যাজ */
+    .rank-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        font-weight: 900;
+        font-size: 14px;
+        transform: skew(-5deg);
+    }
+
+</style>
+
+<script>
+    // --- FIXED NEON RGB LOGIC ---
+    function openSpecificPointsModal(matchId) {
+        const modalContent = document.getElementById('esportsMatchPointsContent');
+        modalContent.innerHTML = '<div style="text-align:center; padding:20px;">Loading stats...</div>';
+        
+        const pointsModal = document.getElementById('esportsMatchPointsModal');
+        pointsModal.classList.add('active');
+
+        database.ref('esports/registrations/' + matchId).once('value').then(snapshot => {
+            const registrations = snapshot.val() || {};
+            
+            if(Object.keys(registrations).length === 0) {
+                modalContent.innerHTML = '<div class="no-data"><p>No data found.</p></div>';
+                return;
+            }
+
+            const teams = Object.values(registrations).map(reg => {
+                const stats = reg.stats || { matches: 0, wins: 0, kills: 0, total: 0 };
+                return {
+                    name: reg.squadName || 'Unknown',
+                    matches: stats.matches || 0,
+                    wins: stats.wins || 0,
+                    kills: stats.kills || 0,
+                    points: stats.total || 0
+                };
+            }).sort((a, b) => b.points - a.points);
+
+            let tableHTML = `
+                <div class="points-table-container" style="background:transparent; border:none; box-shadow:none;">
+                    <table class="points-table">
+                        <thead>
+                            <tr style="font-size:12px; opacity:0.7;">
+                                <th style="padding:5px;">#</th>
+                                <th>Team</th>
+                                <th>M</th> <th>W</th> <th>K</th>
+                                <th>Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            teams.forEach((team, index) => {
+                const rank = index + 1;
+                let rowClass = '';
+                let badgeHTML = rank;
+
+                // র‍্যাংক অনুযায়ী ক্লাস
+                if (index === 0) {
+                    rowClass = 'stream-card rank-1';
+                    badgeHTML = `<div class="rank-badge">1</div>`;
+                } else if (index === 1) {
+                    rowClass = 'stream-card rank-2';
+                    badgeHTML = `<div class="rank-badge">2</div>`;
+                } else if (index === 2) {
+                    rowClass = 'stream-card rank-3';
+                    badgeHTML = `<div class="rank-badge">3</div>`;
+                } else {
+                    // Rank 4+ (সিম্পল)
+                    rowClass = '';
+                    badgeHTML = `<span style="opacity:0.6; font-size:12px;">${rank}</span>`;
+                }
+
+                // নরমাল রো স্টাইল (কালার ফিক্স সহ)
+                let trStyle = '';
+                if(index > 2) {
+                    // ডার্ক মোড চেক করে কালার সেট করা হচ্ছে
+                    let isDark = document.body.classList.contains('dark-mode');
+                    let bg = isDark ? '#1e293b' : '#ffffff';
+                    let color = isDark ? '#fff' : '#333';
+                    trStyle = `background:${bg}; color:${color}; border-bottom:1px solid rgba(0,0,0,0.05);`;
+                }
+
+                if(index > 2) {
+                    // Rank 4+
+                    tableHTML += `
+                        <tr style="${trStyle}">
+                            <td style="padding:8px; text-align:center;">${badgeHTML}</td>
+                            <td style="padding:8px 5px;">${team.name}</td>
+                            <td style="padding:8px 5px;">${team.matches}</td>
+                            <td style="padding:8px 5px;">${team.wins}</td>
+                            <td style="padding:8px 5px;">${team.kills}</td>
+                            <td style="padding:8px 5px;"><strong>${team.points}</strong></td>
+                        </tr>
+                    `;
+                } else {
+                    // Top 3 (Stream Design)
+                    tableHTML += `
+                        <tr class="${rowClass}">
+                            <td style="text-align:center;">${badgeHTML}</td>
+                            <td>${team.name}</td>
+                            <td>${team.matches}</td>
+                            <td>${team.wins}</td>
+                            <td>${team.kills}</td>
+                            <td><strong>${team.points}</strong></td>
+                        </tr>
+                    `;
+                }
+            });
+
+            tableHTML += '</tbody></table></div>';
+            modalContent.innerHTML = tableHTML;
+        });
+    }
+    
+    // --- FIX: Deposit Page Full Screen Style via JavaScript ---
+document.addEventListener("DOMContentLoaded", function() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        #deposit-section {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999; /* সবার উপরে থাকার জন্য */
+            background-color: var(--light-bg); /* লাইট মোড কালার */
+            overflow-y: auto;
+            padding: 20px;
+            display: none; /* শুরুতে বন্ধ থাকবে */
+            box-sizing: border-box;
+        }
+
+        /* ডার্ক মোডের জন্য ব্যাকগ্রাউন্ড ফিক্স */
+        body.dark-mode #deposit-section {
+            background-color: var(--dark-bg);
+        }
+
+        /* ওপেন হওয়ার এনিমেশন */
+        #deposit-section.active {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    `;
+    document.head.appendChild(style);
+});
+
+
+// --- COMPLETE DEPOSIT PAGE SOLUTION (JS + CSS) ---
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. CSS ইনজেকশন (ডিজাইন ফিক্স এবং স্টাইল)
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* ফুল স্ক্রিন ফিক্স (আগের সমস্যা সমাধান) */
+        #deposit-section {
+            position: fixed !important;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99999;
+            background-color: var(--light-bg);
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+            box-sizing: border-box;
+        }
+        body.dark-mode #deposit-section { background-color: var(--dark-bg); }
+        #deposit-section.active { display: block; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* মেথড লিস্ট ডিজাইন (পাশাপাশি) */
+        .payment-methods-horizontal {
+            display: flex; gap: 10px; overflow-x: auto; 
+            padding: 5px 2px; margin-bottom: 20px; scrollbar-width: none;
+        }
+        .payment-methods-horizontal::-webkit-scrollbar { display: none; }
+
+        /* কার্ড ডিজাইন */
+        .payment-method-card-row {
+            min-width: 100px; width: 110px;
+            background: var(--light); border: 1px solid #e5e7eb;
+            border-radius: 12px; padding: 15px 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        }
+        body.dark-mode .payment-method-card-row { background: var(--card-dark); border-color: #374151; }
+
+        /* সিলেক্টেড কার্ড ডিজাইন (Highlight) */
+        .payment-method-card-row.selected {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.1);
+            transform: scale(0.95);
+        }
+        
+        /* আইকন সাইজ */
+        .pm-icon-row { font-size: 24px; margin-bottom: 5px; }
+    `;
+    document.head.appendChild(style);
+});
+
+// 2. মেথড লোড করার ফাংশন (আপডেট করা হয়েছে)
+window.loadDepositMethodsPage = function() {
+    document.getElementById('depositStep2').style.display = 'none'; 
+    const container = document.getElementById('paymentMethodsList');
+    
+    // রিসেট স্টেপ ট্র্যাকার
+    document.getElementById('step2Dot').classList.remove('active');
+    document.getElementById('step3Dot').classList.remove('active');
+    document.getElementById('stepLineFill').style.width = '0%';
+    
+    container.innerHTML = '<div style="grid-column: 1/-1; padding:30px; text-align:center; color:var(--gray);"><i class="fas fa-spinner fa-spin" style="font-size: 30px;"></i></div>';
+    
+    // 🚀 FIX: Promise.all ব্যবহার করে লোগো এবং মেথড একসাথে লোড করা হচ্ছে
+    Promise.all([
+        database.ref('settings/paymentLogos').once('value'),
+        database.ref('payment_settings/deposit').once('value')
+    ]).then(([logoSnap, snapshot]) => {
+        const logos = logoSnap.val() || {};
+        const methods = snapshot.val();
+        
+        container.innerHTML = '';
+        
+        if (!methods) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--gray); font-weight:bold;">No methods available</div>';
+            return;
+        }
+
+        Object.keys(methods).forEach(key => {
+            const method = methods[key];
+            let logoUrl = logos.default || ''; 
+            let color = 'var(--text-light)';
+            const nameLower = method.name.toLowerCase();
+            
+            if(nameLower.includes('bkash')) { color = '#e2136e'; logoUrl = logos.bkash || logoUrl; }
+            else if(nameLower.includes('nagad')) { color = '#ec1c24'; logoUrl = logos.nagad || logoUrl; }
+            else if(nameLower.includes('rocket')) { color = '#8c3494'; logoUrl = logos.rocket || logoUrl; }
+            else if(nameLower.includes('upay')) { color = '#2b75f1'; logoUrl = logos.upay || logoUrl; }
+
+            let iconHtml = logoUrl 
+                ? `<img src="${logoUrl}" alt="${method.name}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">`
+                : `<i class="fas fa-wallet" style="color:${color}; font-size: 30px; margin-bottom: 5px;"></i>`;
+
+            const div = document.createElement('div');
+            div.className = 'pm-card-elite';
+            div.id = `pm-card-${key}`;
+            
+            div.innerHTML = `
+                ${iconHtml}
+                <div style="font-weight:800; font-size:13px; color:${color};">${method.name}</div>
+                <div style="font-size:9px; color:var(--gray); font-weight:700; text-transform:uppercase;">Min ৳${method.minDeposit}</div>
+            `;
+            
+            div.onclick = () => selectDepositMethodPage(method, div);
+            container.appendChild(div);
+        });
+    }).catch(err => {
+        container.innerHTML = '<div style="grid-column: 1/-1; padding:30px; text-align:center; color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Error loading methods</div>';
+    });
+}
+
+
+
+// 3. মেথড সিলেক্ট ফাংশন (একই পেজে দেখানোর লজিক)
+window.selectDepositMethodPage = function(method, cardElement) {
+    // Haptic Feedback for premium feel
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
+
+    document.querySelectorAll('.pm-card-elite').forEach(el => el.classList.remove('selected'));
+    cardElement.classList.add('selected');
+
+    // Step Progress Animation
+    document.getElementById('stepLineFill').style.width = '50%';
+    setTimeout(() => { document.getElementById('step2Dot').classList.add('active'); }, 300);
+    setTimeout(() => { 
+        document.getElementById('stepLineFill').style.width = '100%'; 
+        setTimeout(() => { document.getElementById('step3Dot').classList.add('active'); }, 300);
+    }, 600);
+
+    const formSection = document.getElementById('depositStep2');
+    formSection.style.display = 'block';
+    
+    // Update Holographic Card Data
+    document.getElementById('targetNumber').textContent = method.number;
+    document.getElementById('minDepDisplay').textContent = method.minDeposit;
+    document.getElementById('selectedMethodNamePage').value = method.name;
+    document.getElementById('networkNameDisplay').textContent = method.name.toUpperCase();
+    
+    formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+
+window.resetDepositPage = function() {
+    document.getElementById('depositStep2').style.display = 'none';
+    document.querySelectorAll('.pm-card-elite').forEach(el => el.classList.remove('selected'));
+    
+    // Reset Progress
+    document.getElementById('step2Dot').classList.remove('active');
+    document.getElementById('step3Dot').classList.remove('active');
+    document.getElementById('stepLineFill').style.width = '0%';
+    
+    // Scroll back to top
+    document.getElementById('deposit-section').scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+
+// এই কোডটি আপনার <script> ট্যাগের ভিতরে, initApp() বা DOMContentLoaded এর মধ্যে বসাতে পারেন
+// অথবা সরাসরি HTML এর শেষে নতুন <script> ট্যাগে দিতে পারেন।
+
+const styleElement = document.createElement('style');
+styleElement.innerHTML = `
+    #withdraw-section {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 99999;
+        background-color: var(--light-bg);
+        overflow-y: auto;
+        padding: 20px;
+        display: none;
+        box-sizing: border-box;
+    }
+
+    body.dark-mode #withdraw-section {
+        background-color: var(--dark-bg);
+    }
+
+    #withdraw-section.active {
+        display: block;
+        animation: slideIn 0.3s ease-out;
+    }
+`;
+document.head.appendChild(styleElement);
+
+
+// --- LEADERBOARD LOGIC (UPDATED FOR FULL PAGE & EXTRA FEATURES) ---
+
+const leaderboardBtn = document.getElementById('leaderboardBtn');
+const leaderboardContent = document.getElementById('leaderboardContent');
+const searchLeaderboardInput = document.getElementById('searchLeaderboard');
+let currentLbSort = 'exp';
+
+// বাটন ক্লিক করলে Modal এর বদলে Section ওপেন হবে
+if (leaderboardBtn) {
+    leaderboardBtn.addEventListener('click', () => {
+        switchSection('leaderboard'); 
+        loadLeaderboard('exp'); // ডিফল্ট EXP
+    });
+}
+
+// Search Event Listener
+if(searchLeaderboardInput) {
+    searchLeaderboardInput.addEventListener('input', (e) => {
+        loadLeaderboard(currentLbSort, e.target.value.toLowerCase());
+    });
+}
+
+function loadLeaderboard(sortBy = 'exp', searchTerm = '') {
+    currentLbSort = sortBy;
+    
+    // Tab Active Class Update
+    const tabs = document.querySelectorAll('#lbTabsContainer .lb-tab');
+    tabs.forEach(tab => {
+        const onclickAttr = tab.getAttribute('onclick');
+        if(onclickAttr && onclickAttr.includes(sortBy)) {
+            tab.classList.add('active');
+        } else {
+            tab.classList.remove('active');
+        }
+    });
+
+    leaderboardContent.innerHTML = `
+        <div style="text-align:center; padding: 40px 20px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 30px; color: var(--primary);"></i>
+            <p style="margin-top:10px; color:var(--gray); font-size:14px; font-weight:600;">Ranking players...</p>
+        </div>`;
+
+    database.ref('users').once('value').then(snap => {
+        const usersData = snap.val() || {};
+        
+        let usersArray = Object.keys(usersData).map(key => {
+            return {
+                id: key,
+                username: usersData[key].username || usersData[key].firstName || 'Unknown',
+                photoUrl: usersData[key].photoUrl || null, // <-- ছবি ডাটাবেস থেকে নেওয়া হলো
+                exp: parseInt(usersData[key].exp) || 0,
+                totalKills: parseInt(usersData[key].totalKills) || 0,
+                totalWins: parseInt(usersData[key].totalWins) || 0
+            };
+        });
+
+        // সর্টিং
+        usersArray.sort((a, b) => b[sortBy] - a[sortBy]);
+
+        // নিজের র‍্যাংক বের করা
+        let myRankIndex = usersArray.findIndex(u => u.id === appState.userId);
+        let myData = myRankIndex !== -1 ? usersArray[myRankIndex] : null;
+        
+        // Sticky Footer আপডেট
+        if(myData) {
+            document.getElementById('myRankDisplay').innerText = `#${myRankIndex + 1}`;
+            let scoreLabel = sortBy === 'exp' ? 'EXP' : (sortBy === 'totalKills' ? 'Kills' : 'Wins');
+            document.getElementById('myRankScore').innerText = `${myData[sortBy]} ${scoreLabel}`;
+            document.getElementById('myRankFooter').setAttribute('data-rank', myRankIndex + 1);
+            document.getElementById('myRankFooter').setAttribute('data-score', `${myData[sortBy]} ${scoreLabel}`);
+        }
+
+        // সার্চ করা হলে ফিল্টার করা
+        if (searchTerm !== '') {
+            usersArray = usersArray.filter(u => u.username.toLowerCase().includes(searchTerm));
+        }
+
+        const topUsers = usersArray.slice(0, 50);
+
+        if (topUsers.length === 0) {
+            leaderboardContent.innerHTML = `
+                <div style="text-align:center; padding:50px 20px;">
+                    <i class="fas fa-users-slash" style="font-size:40px; color:var(--gray); opacity:0.3; margin-bottom:15px;"></i>
+                    <p style="color:var(--gray); font-weight:600;">No players found</p>
+                </div>`;
+            return;
+        }
+
+        let html = '';
+
+        // ছবি দেখানোর জন্য হেল্পার ফাংশন
+        const getAvatarHTML = (user, fallbackIcon) => {
+            if (user.photoUrl && user.photoUrl !== 'undefined') {
+                return `<img src="${user.photoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            }
+            return `<i class="${fallbackIcon}"></i>`;
+        };
+
+        // সার্চ না করলে তবেই Podium (Top 3) দেখাবে
+        if (topUsers.length >= 3 && searchTerm === '') {
+            const u1 = topUsers[0], u2 = topUsers[1], u3 = topUsers[2];
+            let label = sortBy === 'exp' ? 'EXP' : (sortBy === 'totalKills' ? 'Kills' : 'Wins');
+
+            html += `
+            <div class="podium-wrapper">
+                <div class="podium-item podium-rank-2">
+                    <div class="podium-name">${u2.username}</div>
+                    <div class="podium-avatar">${getAvatarHTML(u2, 'fas fa-medal')}</div>
+                    <div class="podium-box">
+                        <div style="font-size:24px; opacity:0.5; margin-bottom:5px;">2</div>
+                        <div class="podium-score">${u2[sortBy]} ${label}</div>
+                    </div>
+                </div>
+                <div class="podium-item podium-rank-1" style="z-index: 5;">
+                    <div class="podium-name" style="color:#fbbf24; font-size:14px;">${u1.username}</div>
+                    <div class="podium-avatar">${getAvatarHTML(u1, 'fas fa-crown')}</div>
+                    <div class="podium-box">
+                        <div style="font-size:32px; opacity:0.5; margin-bottom:5px;">1</div>
+                        <div class="podium-score">${u1[sortBy]} ${label}</div>
+                    </div>
+                </div>
+                <div class="podium-item podium-rank-3">
+                    <div class="podium-name">${u3.username}</div>
+                    <div class="podium-avatar">${getAvatarHTML(u3, 'fas fa-award')}</div>
+                    <div class="podium-box">
+                        <div style="font-size:20px; opacity:0.5; margin-bottom:5px;">3</div>
+                        <div class="podium-score">${u3[sortBy]} ${label}</div>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        // List System (Rank 4 to 50, অথবা সার্চ করলে সবাই)
+        html += '<div style="display:flex; flex-direction:column; gap:12px;">';
+        
+        let startIndex = (topUsers.length >= 3 && searchTerm === '') ? 3 : 0;
+
+        for(let i = startIndex; i < topUsers.length; i++) {
+            const user = topUsers[i];
+            const rankNum = (searchTerm === '') ? i + 1 : usersArray.findIndex(u => u.id === user.id) + 1;
+            const rankInfo = getRankInfo(user.exp); 
+            
+            let rowStyle = "background: var(--card-light); border: 1px solid #e5e7eb;";
+            if (document.body.classList.contains('dark-mode')) {
+                rowStyle = "background: var(--card-dark); border: 1px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.2);";
+            }
+            if (user.id === appState.userId) {
+                rowStyle = "background: rgba(59, 130, 246, 0.05); border: 1px solid var(--primary); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);";
+            }
+
+            let scoreText = '';
+            if(sortBy === 'exp') scoreText = `<span style="color:var(--primary); font-size:18px;">${user.exp}</span> <span style="font-size:10px; color:var(--gray);">EXP</span>`;
+            if(sortBy === 'totalKills') scoreText = `<i class="fas fa-crosshairs" style="color:#ef4444; font-size:12px;"></i> <span style="font-size:18px;">${user.totalKills}</span>`;
+            if(sortBy === 'totalWins') scoreText = `<i class="fas fa-trophy" style="color:#fbbf24; font-size:12px;"></i> <span style="font-size:18px;">${user.totalWins}</span>`;
+
+            // Tier Progress Bar
+            let progress = 100;
+            if(!rankInfo.isMax) {
+                progress = ((user.exp - rankInfo.prev) / (rankInfo.next - rankInfo.prev)) * 100;
+                progress = Math.max(0, Math.min(100, progress));
+            }
+
+            html += `
+                <div style="display: flex; align-items: center; padding: 16px; border-radius: 16px; ${rowStyle} transition: transform 0.2s;">
+                    <div style="width: 30px; font-weight: 900; color: var(--gray); font-size: 16px;">#${rankNum}</div>
+                    
+                    <div style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid ${rankInfo.color}; overflow: hidden; margin-left: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05);">
+                        ${getAvatarHTML(user, 'fas fa-user')}
+                    </div>
+
+                    <div style="flex: 1; overflow: hidden; margin-left: 12px;">
+                        <div style="font-weight: 800; font-size: 15px; color: var(--text-light); display: flex; align-items: center; gap: 8px;">
+                            ${user.username} 
+                            ${user.id === appState.userId ? '<span style="font-size:9px; background:var(--primary); color:white; padding:3px 8px; border-radius:12px; font-weight:900;">YOU</span>' : ''}
+                        </div>
+                        <div style="font-size: 11px; color: ${rankInfo.color}; font-weight:800; margin-top: 4px; display:flex; align-items:center; gap:5px;">
+                            <i class="fas ${rankInfo.icon}"></i> ${rankInfo.name}
+                        </div>
+                        <div class="lb-list-progress-bg">
+                            <div class="lb-list-progress-fill" style="width: ${progress}%; background: ${rankInfo.color};"></div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; font-weight: 900;">
+                        ${scoreText}
+                    </div>
+                </div>
+            `;
+        }
+
+        html += '</div>';
+        leaderboardContent.innerHTML = html;
+        
+        // Dark mode text fix
+        if (document.body.classList.contains('dark-mode')) {
+            document.querySelectorAll('#leaderboardContent [style*="color: var(--text-light)"]').forEach(el => {
+                el.style.color = 'var(--text-dark)';
+            });
+        }
+    }).catch(err => {
+        console.error(err);
+        leaderboardContent.innerHTML = `<div class="no-data"><p style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Error loading data</p></div>`;
+    });
+}
+
+// Share Feature
+function shareMyRank() {
+    const footer = document.getElementById('myRankFooter');
+    const rank = footer.getAttribute('data-rank') || '--';
+    const score = footer.getAttribute('data-score') || '0';
+    
+    // Telegram Bot এর লিংকের জায়গায় আপনার আসল লিংক বসাতে পারেন
+    const text = `🏆 I am currently Rank #${rank} in Battle Royale Tournament with ${score}! Think you can beat me?\n\n🎮 Play Now: https://t.me/de1stmo_bot/app?startapp=${appState.userId}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'My Tournament Rank',
+            text: text
+        }).catch(err => console.log('Share failed', err));
+    } else {
+        copyToClipboard(text);
+        alert("Your rank info has been copied! Share it with your friends.");
+    }
+}
+
+
+
+// --- LUCKY DRAW USER LOGIC ---
+
+const luckyDrawMenuBtn = document.getElementById('luckyDrawMenuBtn');
+
+if(luckyDrawMenuBtn) {
+    luckyDrawMenuBtn.addEventListener('click', () => {
+        // মডালের বদলে সেকশন ওপেন হবে
+        switchSection('luckydraw'); 
+        loadLuckyDrawDetails();
+    });
+}
+
+
+
+// Ensure the function signature accepts drawId
+window.joinLuckyDraw = function(drawId, feeAmount, limitAmount, fixedQty = null) {
+    if(!appState.userId) return alert("User not loaded properly.");
+
+    const qtyInput = document.getElementById(`ticketQty_${drawId}`);
+    let qty = fixedQty !== null ? fixedQty : (parseInt(qtyInput.value) || 1);
+    
+    if(qty < 1) return alert("Please enter a valid ticket quantity!");
+
+    let totalFee = feeAmount * qty;
+
+    const generateUniqueTickets = (count) => {
+        let tkts = [];
+        for(let i=0; i<count; i++) tkts.push('LD-' + Math.random().toString(36).substring(2, 8).toUpperCase());
+        return tkts;
+    };
+
+    database.ref(`luckyDraw/active/${drawId}`).once('value').then(dSnap => {
+        const drawData = dSnap.val();
+        if(!drawData) return alert("Draw ended or invalid!");
+        
+        const participants = drawData.participants || {};
+        
+        let totalTicketsSold = 0;
+        Object.values(participants).forEach(p => { totalTicketsSold += (p.tickets || 1); });
+        
+        if(limitAmount > 0 && (totalTicketsSold + qty) > limitAmount) {
+            return alert(`Sorry! Only ${limitAmount - totalTicketsSold} tickets left.`);
+        }
+
+        database.ref(`users/${appState.userId}`).once('value').then(snap => {
+            const user = snap.val() || {};
+            const currentBal = parseFloat(user.balance) || 0;
+
+            if (currentBal < totalFee) {
+                return alert(`Insufficient Balance! You need ৳${totalFee} to buy ${qty} tickets.`);
+            }
+
+            let updates = {};
+            
+if (totalFee > 0) {
+    const newBalance = currentBal - totalFee;
+    updates[`users/${appState.userId}/balance`] = newBalance;
+    
+    // --- 🚨 NEW LOGIC: Adjust Winning Balance ---
+    let currentWinning = parseFloat(user.winningBalance) || 0;
+    if (currentWinning > newBalance) {
+        updates[`users/${appState.userId}/winningBalance`] = newBalance;
+    }
+    // ------------------------------------------
+
+    
+
+                const txnKey = database.ref('transactions').push().key;
+                updates[`transactions/${txnKey}`] = {
+                    userId: appState.userId,
+                    type: 'match_entry', 
+                    amount: totalFee,
+                    date: Date.now(),
+                    status: 'success',
+                    method: 'Lucky Draw Ticket',
+                    title: `Bought ${qty} Tickets`
+                };
+            }
+
+            const userEntry = participants[appState.userId] || {};
+            const previousOwnTickets = userEntry.ticketNumbers || [];
+            const previousPaid = userEntry.paidTickets || userEntry.tickets || 0;
+            const claimedFree = userEntry.claimedFreeTickets || 0;
+
+            const newTicketNumbers = generateUniqueTickets(qty);
+            const combinedTickets = previousOwnTickets.concat(newTicketNumbers);
+
+                        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}`] = {
+                ...userEntry, // 🟢 এই লাইনের কারণে ইউজারের আগের ক্লেইম রেকর্ড আর মুছে যাবে না
+                name: appState.currentUser.firstName + ' ' + (appState.currentUser.lastName || ''),
+                username: appState.currentUser.username || 'N/A',
+                timestamp: Date.now(),
+                tickets: combinedTickets.length,
+                paidTickets: previousPaid + qty,
+                ticketNumbers: combinedTickets
+            };
+
+
+            return database.ref().update(updates).then(() => {
+                return { generated: newTicketNumbers };
+            });
+        })
+        .then((res) => {
+            if (!res) return;
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            }
+            alert(`Success! You bought ${qty} ticket(s).\nTickets: ${res.generated.join(', ')}`);
+        })
+        .catch(err => {
+            if(err) alert("Error: " + err.message);
+        });
+    });
+}
+
+
+window.claimFreeLdTickets = function(drawId, offerId, offerBuy, offerGet) {
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Claiming...';
+    btn.disabled = true;
+
+    database.ref(`luckyDraw/active/${drawId}`).once('value').then(snap => {
+        const drawData = snap.val();
+        if(!drawData) throw new Error("Draw not found!");
+
+        const participants = drawData.participants || {};
+        const userEntry = participants[appState.userId];
+        if(!userEntry) throw new Error("No purchase found!");
+
+                let paidTkts = userEntry.paidTickets || userEntry.tickets || 0;
+        let claimedForThisOffer = userEntry.claimedOffers && userEntry.claimedOffers[offerId] ? userEntry.claimedOffers[offerId] : 0;
+        
+        // One-time Claim Logic Security
+        if (claimedForThisOffer > 0) throw new Error("You have already claimed this offer!");
+        
+        let eligibleFree = (paidTkts >= offerBuy) ? offerGet : 0;
+        let pendingFree = eligibleFree - claimedForThisOffer;
+
+
+        if (pendingFree <= 0) throw new Error("No free tickets available to claim for this offer!");
+
+        let totalTicketsSold = 0;
+        Object.values(participants).forEach(p => { totalTicketsSold += (p.tickets || 1); });
+        
+        let availableSlots = drawData.limit > 0 ? (drawData.limit - totalTicketsSold) : pendingFree;
+        let ticketsToClaim = Math.min(pendingFree, availableSlots);
+
+        if(ticketsToClaim <= 0) {
+            throw new Error("Sorry, no more slots available in this draw!");
+        }
+
+        const generateUniqueTickets = (count) => {
+            let tkts = [];
+            for(let i=0; i<count; i++) tkts.push('LD-' + Math.random().toString(36).substring(2, 8).toUpperCase());
+            return tkts;
+        };
+
+        const newFreeTickets = generateUniqueTickets(ticketsToClaim);
+        const combinedTickets = (userEntry.ticketNumbers || []).concat(newFreeTickets);
+
+        let updates = {};
+        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}/tickets`] = combinedTickets.length;
+        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}/claimedOffers/${offerId}`] = claimedForThisOffer + ticketsToClaim;
+        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}/ticketNumbers`] = combinedTickets;
+
+        return database.ref().update(updates).then(() => {
+            return { generated: newFreeTickets, count: ticketsToClaim, pendingLeft: pendingFree - ticketsToClaim };
+        });
+    }).then((res) => {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+        let msg = `🎉 Success! You claimed ${res.count} FREE ticket(s)!\nTickets: ${res.generated.join(', ')}`;
+        if(res.pendingLeft > 0) msg += `\n\n(Note: ${res.pendingLeft} free ticket(s) lost due to Draw Limit reached.)`;
+        
+        alert(msg);
+    }).catch(err => {
+        alert(err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+
+
+// --- ট্যাব সুইচ করার ফাংশন ---
+window.switchLdTab = function(tab) {
+    // ট্যাবগুলোর অ্যাক্টিভ ক্লাস আপডেট
+    document.getElementById('ldTab_active').classList.toggle('active', tab === 'active');
+    document.getElementById('ldTab_mytickets').classList.toggle('active', tab === 'mytickets');
+    document.getElementById('ldTab_history').classList.toggle('active', tab === 'history');
+    
+    // কন্টেন্টগুলোর ভিজিবিলিটি আপডেট
+    document.getElementById('ldUserContent').style.display = tab === 'active' ? 'block' : 'none';
+    document.getElementById('ldMyTicketsContent').style.display = tab === 'mytickets' ? 'block' : 'none';
+    document.getElementById('ldHistoryContent').style.display = tab === 'history' ? 'block' : 'none';
+    
+    // ট্যাবের উপর ভিত্তি করে ডাটা লোড
+    if(tab === 'active') {
+        loadLuckyDrawDetails();
+    } else if (tab === 'mytickets') {
+        loadMyTickets();
+    } else if (tab === 'history') {
+        loadLuckyDrawHistory();
+    }
+}
+
+
+window.loadMyTickets = function() {
+    const container = document.getElementById('ldMyTicketsContent');
+    container.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-spinner fa-spin" style="font-size:30px; color:var(--primary);"></i><p style="margin-top:10px;">Loading your tickets...</p></div>';
+
+    database.ref('luckyDraw/active').once('value').then(snap => {
+        const draws = snap.val() || {};
+        container.innerHTML = '';
+        let hasTickets = false;
+
+        Object.keys(draws).forEach(drawId => {
+            const draw = draws[drawId];
+            const userEntry = draw.participants ? draw.participants[appState.userId] : null;
+
+            if (userEntry && userEntry.tickets > 0) {
+                hasTickets = true;
+                let tktsHtml = userEntry.ticketNumbers.map(t =>
+    `<div class="ld-ticket-stub">
+        <i class="fas fa-star" style="color: rgba(251, 191, 36, 0.5); font-size: 10px;"></i> 
+        ${t}
+    </div>`
+).join('');
+
+
+
+                container.innerHTML += `
+                    <div style="background: var(--card-light); border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed rgba(16, 185, 129, 0.3); padding-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 10px; color: var(--primary); font-weight: 800; text-transform: uppercase;">Mega Draw Ticket Vault</div>
+                                <div style="font-size: 15px; font-weight: 800; color: var(--text-light);">${draw.title}</div>
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 6px 12px; border-radius: 12px; font-weight: 900; font-size: 11px; text-align: center;">
+                                TOTAL<br><span style="font-size: 16px;">${userEntry.tickets}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 5px;">
+                            ${tktsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        if (!hasTickets) {
+            container.innerHTML = `
+                <div style="text-align:center; padding: 50px 20px;">
+                    <i class="fas fa-ticket-alt" style="font-size:50px; opacity:0.2; color:var(--text-light); margin-bottom:15px;"></i>
+                    <h3 style="color:var(--text-light); font-size:18px;">No Tickets Found</h3>
+                    <p style="color:var(--gray); font-size:13px; margin-top:5px;">You haven't bought any tickets for active draws.</p>
+                    <button class="join-btn" onclick="switchLdTab('active')" style="margin-top: 15px;">Buy Tickets</button>
+                </div>`;
+        }
+
+        // Dark mode support
+        if(document.body.classList.contains('dark-mode')) {
+            container.querySelectorAll('[style*="var(--card-light)"]').forEach(el => el.style.background = 'var(--card-dark)');
+            container.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+        }
+    });
+}
+
+
+
+// --- LUCKY DRAW USER LOGIC (ADVANCED UI) ---
+function loadLuckyDrawDetails() {
+    const content = document.getElementById('ldUserContent');
+    
+    database.ref('luckyDraw/active').on('value', snap => {
+        const activeDraws = snap.val() || {};
+        content.innerHTML = '';
+        
+        if (Object.keys(activeDraws).length === 0) {
+            content.innerHTML = `
+                <div style="padding: 50px 20px; text-align: center; animation: fadeIn 0.5s;">
+                    <div style="width: 100px; height: 100px; background: rgba(59, 130, 246, 0.05); border: 1px dashed rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <i class="fas fa-box-open" style="font-size: 45px; color: var(--primary); opacity: 0.8;"></i>
+                    </div>
+                    <h3 style="color: var(--text-light); font-size: 22px; font-weight: 800; margin-bottom: 8px;">No Event Live</h3>
+                    <p style="font-size: 14px; color: var(--gray); max-width: 250px; margin: 0 auto;">Keep an eye out! The next massive lucky draw is coming soon.</p>
+                </div>
+            `;
+            if(document.body.classList.contains('dark-mode')) {
+                content.querySelectorAll('h3').forEach(el => el.style.color = 'var(--text-dark)');
+            }
+            return;
+        }
+
+        Object.keys(activeDraws).forEach(drawId => {
+            const draw = activeDraws[drawId];
+            const participants = draw.participants || {};
+            
+            let totalTicketsSold = 0;
+            Object.values(participants).forEach(p => { totalTicketsSold += (p.tickets || 1); });
+
+            const userEntry = participants[appState.userId];
+            const userOwnTickets = userEntry ? (userEntry.tickets || 0) : 0;
+            
+            let isFull = false;
+            let limitHtml = '';
+            if (draw.limit > 0) {
+                isFull = totalTicketsSold >= draw.limit;
+                const progress = Math.min((totalTicketsSold / draw.limit) * 100, 100);
+                limitHtml = `
+                    <div class="ld-progress-container">
+                        <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:#cbd5e1; margin-bottom:10px;">
+                            <span><i class="fas fa-fire" style="color:#ef4444; margin-right:5px;"></i>Tickets Claimed</span>
+                            <span style="color:#fcd34d;">${totalTicketsSold} / ${draw.limit}</span>
+                        </div>
+                        <div class="ld-progress-bg">
+                            <div class="ld-progress-fill" style="width: ${progress}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let timeHtml = '';
+            if (draw.endTimestamp && draw.endTimestamp > 0) {
+                timeHtml = `
+                    <div class="ld-badge-time">
+                        <i class="fas fa-clock"></i> 
+                        <span class="ld-countdown" data-end-time="${draw.endTimestamp}">Calculating...</span>
+                    </div>
+                `;
+            }
+
+            let ownTicketsDisplay = '';
+            if (userOwnTickets > 0) {
+                ownTicketsDisplay = `
+                <div style="background: rgba(16, 185, 129, 0.1); border-radius: 10px; padding: 10px 12px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="color: #10b981; font-weight: 700; font-size: 12px;">
+                        <i class="fas fa-check-circle"></i> You have ${userOwnTickets} ticket(s)
+                    </div>
+                    <button onclick="switchLdTab('mytickets')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer;">
+                        View
+                    </button>
+                </div>`;
+            }
+
+                           // --- Multiple Offers Banner & Claim Logic ---
+            let userPaidTickets = userEntry ? (userEntry.paidTickets || userEntry.tickets || 0) : 0;
+            let offerHtml = '';
+            let claimFreeHtml = ''; // আগের লজিকের জন্য ফাঁকা রাখছি
+
+            if (draw.offers) {
+                Object.keys(draw.offers).forEach(offerId => {
+                    const offer = draw.offers[offerId];
+                    // Track claims per specific offer
+                    let userClaimedForThisOffer = userEntry && userEntry.claimedOffers && userEntry.claimedOffers[offerId] ? userEntry.claimedOffers[offerId] : 0;
+                    
+                    // একবারে ক্লেইম করা হয়ে গেলে আর করা যাবে না (One-Time Limit)
+                    let hasClaimed = userClaimedForThisOffer > 0;
+                    let isMissionComplete = userPaidTickets >= offer.buy;
+                    let pendingFree = (isMissionComplete && !hasClaimed) ? offer.get : 0;
+                    
+                    // প্রোগ্রেস লজিক (ক্লেইম হয়ে গেলে ১০০% এ আটকে থাকবে)
+                    let currentCycleTickets = hasClaimed ? offer.buy : Math.min(userPaidTickets, offer.buy);
+                    let nextTarget = offer.buy - currentCycleTickets;
+                    let progressPct = (currentCycleTickets / offer.buy) * 100;
+
+                    let btnStyle, btnAttr, btnText, statusText;
+
+                    if (hasClaimed) {
+                        // ক্লেইম করা হয়ে গেছে
+                        btnStyle = 'background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: not-allowed;';
+                        btnAttr = 'disabled';
+                        btnText = '<i class="fas fa-check-double"></i> Claimed';
+                        statusText = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Offer Already Claimed!</span>';
+                    } else if (isMissionComplete) {
+                        // মিশন কমপ্লিট, ক্লেইম করার জন্য প্রস্তুত
+                        btnStyle = 'background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4); cursor: pointer;';
+                        btnAttr = `onclick="claimFreeLdTickets('${drawId}', '${offerId}', ${offer.buy}, ${offer.get})"`;
+                        btnText = `<i class="fas fa-gift" style="animation: bounce 2s infinite;"></i> Claim ${offer.get}`;
+                        statusText = 'Mission Complete! Get your free ticket.';
+                    } else {
+                        // মিশন চলছে
+                        btnStyle = 'background: rgba(255, 255, 255, 0.1); color: #94a3b8; cursor: not-allowed;';
+                        btnAttr = 'disabled';
+                        btnText = '<i class="fas fa-lock"></i> Claim';
+                        statusText = `Buy <span style="color: white; font-weight: bold;">${nextTarget}</span> more to get <span style="color: #fbbf24; font-weight: bold;">${offer.get}</span> FREE!`;
+                    }
+
+                    // নতুন ডিজাইন
+                    offerHtml += `
+                    <div style="margin-top: 15px; background: rgba(245, 158, 11, 0.1); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 12px; padding: 12px; text-align: left; color: #fbbf24;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 800; font-size: 13px;">
+                                    BUY ${offer.buy} GET ${offer.get} FREE!
+                                </div>
+                                <div style="font-size: 11px; margin-top: 3px; color: #cbd5e1; font-weight: 600;">
+                                    ${statusText}
+                                </div>
+                            </div>
+                            
+                            <button ${btnAttr} style="border: none; padding: 8px 12px; border-radius: 8px; font-weight: 800; font-size: 11px; transition: 0.3s; text-transform: uppercase; display: flex; align-items: center; gap: 5px; ${btnStyle}">
+                                ${btnText}
+                            </button>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="offer-progress-bg" style="flex: 1; margin: 0; height: 6px; ${hasClaimed ? 'opacity: 0.5;' : ''}">
+                                <div class="offer-progress-fill" style="width: ${progressPct}%; ${hasClaimed ? 'background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.5);' : ''}"></div>
+                            </div>
+                            <div style="font-size: 10px; font-weight: bold; background: rgba(245, 158, 11, 0.2); padding: 2px 6px; border-radius: 8px; ${hasClaimed ? 'color: #10b981; background: rgba(16, 185, 129, 0.1);' : ''}">
+                                ${currentCycleTickets} / ${offer.buy}
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+                          
+
+
+
+            let actionHtml = '';
+            if (draw.endTimestamp && draw.endTimestamp < Date.now()) {
+                actionHtml = `${ownTicketsDisplay}<button class="ld-action-btn" disabled><i class="fas fa-lock"></i> Draw Closed</button>`;
+            } else if (isFull) {
+                actionHtml = `${ownTicketsDisplay}<button class="ld-action-btn" disabled><i class="fas fa-times-circle"></i> Sold Out</button>`;
+            } else {
+                if (draw.fee === 0) {
+                    if (userOwnTickets > 0) {
+                        actionHtml = `${ownTicketsDisplay}<button class="ld-action-btn" disabled style="background: rgba(16, 185, 129, 0.2); color: #34d399; box-shadow: none;"><i class="fas fa-check"></i> Free Ticket Claimed</button>`;
+                    } else {
+                        actionHtml = `<button class="ld-action-btn" onclick="joinLuckyDraw('${drawId}', 0, ${draw.limit}, 1)"><i class="fas fa-magic"></i> Claim Free Ticket</button>`;
+                    }
+                } else {
+                    const maxCanBuy = draw.limit > 0 ? (draw.limit - totalTicketsSold) : 50;
+                    actionHtml = `
+                        ${ownTicketsDisplay}
+                        <div class="ld-action-area">
+                            <div style="position: relative; flex: 0.8;">
+                                <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #1e1b4b; padding: 0 8px; font-size: 11px; color: #94a3b8; font-weight: 800; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">QTY</div>
+                                <input type="number" id="ticketQty_${drawId}" value="1" min="1" max="${maxCanBuy}" class="ld-input-qty">
+                            </div>
+                            <button class="ld-action-btn" style="flex: 2;" onclick="joinLuckyDraw('${drawId}', ${draw.fee}, ${draw.limit})">
+                                Buy For ৳${draw.fee} <span style="font-size:12px; opacity:0.8;">/ea</span>
+                            </button>
+                        </div>
+                        ${claimFreeHtml}
+                    `;
+                }
+            }
+
+            content.innerHTML += `
+                <div class="ld-premium-card">
+                    <i class="fas fa-gift" style="position: absolute; left: -30px; bottom: -30px; font-size: 180px; color: rgba(255,255,255,0.03); transform: rotate(-20deg); z-index: 0;"></i>
+                    ${timeHtml}
+                    <div class="ld-content-wrapper">
+                        <div style="font-size: 12px; color: #a78bfa; font-weight: 800; letter-spacing: 2px; margin-bottom: 5px;">MEGA DRAW</div>
+                        <div class="ld-title">${draw.title}</div>
+                        <div class="ld-prize-amount"><span class="ld-prize-currency">৳</span>${draw.prize}</div>
+                        
+                        ${limitHtml}
+                        ${actionHtml}
+                        ${offerHtml}
+                    </div>
+                </div>
+            `;
+        });
+    });
+}
+
+
+// --- LUCKY DRAW HISTORY (UPGRADED UI WITH TIME LIMIT) ---
+window.loadLuckyDrawHistory = function() {
+    const container = document.getElementById('ldHistoryContent');
+    container.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-circle-notch fa-spin" style="font-size:35px; color:var(--primary);"></i><p style="margin-top:15px; color:var(--gray); font-weight:600;">Loading History...</p></div>';
+
+    // প্রথমে অ্যাডমিনের সেট করা Time Limit ডাটাবেস থেকে নিয়ে আসা
+    database.ref('settings/claimTimeLimit').once('value').then(limitSnap => {
+        const claimTimeLimitHours = parseInt(limitSnap.val()) || 0;
+
+        database.ref('luckyDraw/history').once('value').then(snap => {
+            const historyData = snap.val();
+            container.innerHTML = '';
+            
+            if(!historyData) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 50px 20px;">
+                        <i class="fas fa-history" style="font-size:50px; opacity:0.2; color:var(--text-light); margin-bottom:15px;"></i>
+                        <h3 style="color:var(--text-light); font-size:18px;">No History Yet</h3>
+                    </div>`;
+                return;
+            }
+
+            const draws = Object.keys(historyData).map(key => ({ id: key, ...historyData[key] })).sort((a,b) => b.endTimestamp - a.endTimestamp);
+
+            draws.forEach(d => {
+                let winnersSummaryHtml = '';
+                
+                // টাইম লিমিট চেক করা (যদি এক্সপায়ার হয়ে যায়)
+                const isExpired = claimTimeLimitHours > 0 && Date.now() > (d.endTimestamp + claimTimeLimitHours * 3600000);
+                
+                if(d.winners) {
+                    const winnerCount = Object.keys(d.winners).length;
+                    
+                    let hasWon = false;
+                    Object.values(d.winners).forEach(w => {
+                        // যদি এক্সপায়ার না হয়ে থাকে এবং ক্লেইম না করে থাকে, তবেই নোটিফিকেশন ব্যাজ দেখাবে
+                        if(String(w.uid) === String(appState.userId) && w.claimed === false && !isExpired) {
+                            hasWon = true;
+                        }
+                    });
+
+                    let claimBadge = hasWon ? `<span style="position:absolute; top:-5px; right:-5px; width:12px; height:12px; background:var(--danger); border-radius:50%; border:2px solid var(--card-light); animation:pulse 1s infinite;"></span>` : '';
+
+                    winnersSummaryHtml = `
+                        <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3); padding: 15px; border-radius: 12px; text-align: center; position:relative;">
+                            ${claimBadge}
+                            <div style="font-size: 15px; font-weight: 800; color: var(--success); margin-bottom: 8px;">
+                                <i class="fas fa-gift"></i> ${winnerCount} Winners Selected
+                            </div>
+                            <button class="join-btn" style="background: var(--primary); padding: 8px 20px; font-size: 13px; border-radius: 8px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);" onclick="openLdWinnersModal('${d.id}', ${d.endTimestamp})">
+                                <i class="fas fa-users"></i> View Winners
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    winnersSummaryHtml = `<div style="text-align:center; padding: 15px; color:var(--gray); font-size:13px; background:rgba(0,0,0,0.03); border-radius:12px;">No winners were selected</div>`;
+                }
+
+                const drawNumText = d.drawNumber ? `DRAW #${d.drawNumber}` : 'PAST EVENT';
+                const dateStr = new Date(d.endTimestamp).toLocaleDateString([], {year: 'numeric', month: 'short', day: 'numeric'});
+
+                container.innerHTML += `
+                    <div style="background: var(--card-light); border: 1px solid #e5e7eb; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 15px;">
+                            <div>
+                                <span style="display:inline-block; background: rgba(59, 130, 246, 0.1); color: var(--primary); padding: 5px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">${drawNumText}</span>
+                                <h4 style="font-size: 18px; font-weight: 800; color: var(--text-light);">${d.title}</h4>
+                            </div>
+                            <div style="text-align: right; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 12px;">
+                                <div style="font-size: 10px; color: var(--gray); text-transform:uppercase; font-weight:700;">Total Prize</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--warning);">৳${d.prize}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="font-size: 12px; color: var(--gray); margin-bottom: 15px; font-weight: 600; display:flex; align-items:center; gap:5px;">
+                            <i class="far fa-calendar-check"></i> Ended on ${dateStr}
+                        </div>
+
+                        <div>
+                            ${winnersSummaryHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            if(document.body.classList.contains('dark-mode')) {
+                container.querySelectorAll('[style*="var(--card-light)"]').forEach(el => { el.style.background = 'var(--card-dark)'; el.style.borderColor = '#374151'; });
+                container.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+            }
+        });
+    });
+}
+
+
+
+
+// --- Open Winners Modal Logic ---
+window.openLdWinnersModal = function(historyKey, endTimestamp) {
+    const container = document.getElementById('ldWinnersListContent');
+    container.innerHTML = '<div style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin" style="font-size:30px; color:var(--primary);"></i><p style="margin-top:10px;">Loading Winners...</p></div>';
+    document.getElementById('ldWinnersModal').classList.add('active');
+
+    database.ref('settings/claimTimeLimit').once('value').then(limitSnap => {
+        const claimTimeLimitHours = parseInt(limitSnap.val()) || 0;
+        const isExpired = claimTimeLimitHours > 0 && Date.now() > (endTimestamp + claimTimeLimitHours * 3600000);
+
+        database.ref('luckyDraw/history/' + historyKey + '/winners').once('value').then(snap => {
+            const winners = snap.val() || {};
+            container.innerHTML = '';
+            
+            if(Object.keys(winners).length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--gray);">No winners data found</div>';
+                return;
+            }
+
+            let html = '';
+            Object.keys(winners).forEach(wKey => {
+                const w = winners[wKey];
+                const isCurrentUser = (String(w.uid) === String(appState.userId));
+                
+                let claimUI = '';
+                if (isCurrentUser) {
+                    if (w.claimed === false) {
+                        if (isExpired) {
+                            claimUI = `<span style="color:var(--danger); font-size: 11px; font-weight: 800;"><i class="fas fa-times-circle"></i> EXPIRED</span>`;
+                        } else {
+                            claimUI = `<button class="join-btn" style="background:linear-gradient(135deg, #f59e0b, #ea580c); padding: 4px 12px; font-size: 11px; border-radius: 6px; box-shadow: 0 0 10px rgba(245,158,11,0.5); animation: pulse 1.5s infinite;" onclick="claimLdPrize(this, '${historyKey}', '${wKey}', ${w.amount}, '${w.ticket}', ${endTimestamp})">CLAIM ৳${w.amount}</button>`;
+                        }
+                    } else {
+                        claimUI = `<span style="color:var(--gray); font-size: 11px; font-weight: 800;"><i class="fas fa-check-double"></i> CLAIMED</span>`;
+                    }
+                } else {
+                    claimUI = `<span style="color: var(--success); font-weight: 900; font-size: 16px;">৳${w.amount}</span>`;
+                }
+
+                html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(16, 185, 129, 0.08); padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--success); border-right: 1px solid rgba(16, 185, 129, 0.2); border-top: 1px solid rgba(16, 185, 129, 0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 35px; height: 35px; background: rgba(251, 191, 36, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 16px;">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 800; color: var(--text-light); font-size: 15px;">${w.name} ${isCurrentUser ? '(YOU)' : ''}</div>
+                            <div style="font-size: 11px; color: var(--gray); font-family: monospace; margin-top: 2px;"><i class="fas fa-ticket-alt"></i> ${w.ticket}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; gap:3px;">
+                        ${claimUI}
+                    </div>
+                </div>`;
+            });
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            if(document.body.classList.contains('dark-mode')) {
+                tempDiv.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+            }
+            container.innerHTML = tempDiv.innerHTML;
+        });
+    });
+}
+
+
+
+// --- Claim Prize Logic ---
+window.claimLdPrize = function(btnElement, historyKey, winnerKey, amount, ticketNo, endTimestamp) {
+    const originalText = btnElement.innerHTML;
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btnElement.disabled = true;
+
+    // সিকিউরিটি চেক: ডাটাবেস থেকে টাইম লিমিট এনে ডাবল-চেক করা
+    database.ref('settings/claimTimeLimit').once('value').then(limitSnap => {
+        const claimTimeLimitHours = parseInt(limitSnap.val()) || 0;
+        
+        if (claimTimeLimitHours > 0 && Date.now() > (endTimestamp + claimTimeLimitHours * 3600000)) {
+            alert("Sorry, the claim period for this reward has expired!");
+            const parentDiv = btnElement.parentElement;
+            parentDiv.innerHTML = `<span style="color:var(--danger); font-size: 11px; font-weight: 800;"><i class="fas fa-times-circle"></i> EXPIRED</span>`;
+            return;
+        }
+
+        database.ref(`luckyDraw/history/${historyKey}/winners/${winnerKey}`).once('value').then(snap => {
+            const winnerData = snap.val();
+            
+            if (!winnerData || winnerData.claimed) {
+                alert("Prize already claimed or invalid!");
+                loadLuckyDrawHistory(); 
+                return;
+            }
+
+            database.ref('users/' + appState.userId).once('value').then(uSnap => {
+                const user = uSnap.val() || {};
+                const currentBalance = parseFloat(user.balance) || 0;
+                const currentWinning = parseFloat(user.winningBalance) || 0; 
+                
+                let updates = {};
+                updates[`luckyDraw/history/${historyKey}/winners/${winnerKey}/claimed`] = true;
+                updates[`users/${appState.userId}/balance`] = currentBalance + amount;
+                updates[`users/${appState.userId}/winningBalance`] = currentWinning + amount;
+                
+                const txnKey = database.ref('transactions').push().key;
+                updates[`transactions/${txnKey}`] = {
+                    userId: appState.userId,
+                    type: 'deposit',
+                    amount: amount,
+                    date: Date.now(),
+                    status: 'success',
+                    method: 'Lucky Draw Winner',
+                    title: `Claimed Draw Prize (Tkt: ${ticketNo})`
+                };
+
+                database.ref().update(updates).then(() => {
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    alert(`Congratulations! You have successfully claimed ৳${amount}. It has been added to your Winning Balance.`);
+                    
+                    const parentDiv = btnElement.parentElement;
+                    parentDiv.innerHTML = `<span style="color:var(--gray); font-size: 11px; font-weight: 800;"><i class="fas fa-check-double"></i> CLAIMED</span>`;
+                    
+                    loadUserProfile(); 
+                });
+            });
+        }).catch(err => {
+            alert("Error claiming prize: " + err.message);
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+        });
+    });
+}
+
+
+
+
+
+// ক্যাটাগরি ডাটা (এখানে ইমেজগুলো ডাইনামিক হবে)
+let gameCategories = [
+    { id: 'br', title: 'BR MATCH', badge: 'BR', badgeClass: 'badge-br', img: 'https://i.ibb.co/VvzK2Bv/br.jpg' },
+    { id: 'squad', title: 'BR SURVIVAL / SQUAD', badge: 'SURVIVAL', badgeClass: 'badge-survival', img: 'https://i.ibb.co/zX9w4GZ/squad.jpg' },
+    { id: 'clash', title: 'CLASH SQUAD', badge: 'CS', badgeClass: 'badge-cs', img: 'https://i.ibb.co/9vD0H92/cs.jpg' },
+    { id: 'cs1v1', title: 'CS 1v1 2v2', badge: 'CS', badgeClass: 'badge-cs', img: 'https://i.ibb.co/Qpm0f43/1v1.jpg' },
+    { id: 'lone', title: 'LONE WOLF', badge: 'LONE', badgeClass: 'badge-lone', img: 'https://i.ibb.co/2kM9H9p/lone.jpg' },
+    { id: 'free', title: 'FREE MATCH', badge: 'FREE', badgeClass: 'badge-free', img: 'https://i.ibb.co/8NxtzQj/free.jpg' }
+];
+
+// ক্যাটাগরি গ্রিড রেন্ডার করার ফাংশন (Admin Settings থেকে ফটো নিবে)
+function renderCategoryGrid() {
+    const gridContainer = document.getElementById('categoryGridContainer');
+    if (!gridContainer) return;
+    
+    // ডাটাবেস থেকে ফটো লিঙ্ক নিয়ে আসা
+    database.ref('settings/categoryImages').once('value').then(snap => {
+        const adminPhotos = snap.val() || {};
+        
+        gridContainer.innerHTML = '';
+
+        gameCategories.forEach(cat => {
+            // যদি অ্যাডমিন নতুন ফটো দেয় তবে সেটা নিবে, না থাকলে ডিফল্ট ফটো নিবে
+            const displayImg = adminPhotos[cat.id] || cat.img;
+            
+            const matchCount = appState.matches.filter(m => m.category === cat.id && m.status !== 'ended').length;
+
+            const card = document.createElement('div');
+            card.className = 'cat-card';
+            card.onclick = () => openCategoryMatches(cat.id, cat.title);
+            
+            card.innerHTML = `
+                <div class="cat-img-wrapper">
+                    <div class="cat-badge ${cat.badgeClass}">${cat.badge}</div>
+                    <img src="${displayImg}" alt="${cat.title}" onerror="this.src='https://placehold.co/300x150/1e293b/FFF?text=${cat.badge}'">
+                </div>
+                <div class="cat-info">
+                    <div class="cat-title">${cat.title}</div>
+                    <div class="cat-count">${matchCount} matches found</div>
+                </div>
+            `;
+            gridContainer.appendChild(card);
+        });
+    });
+}
+
+
+// কার্ডে ক্লিক করলে ম্যাচ ওপেন হওয়ার ফাংশন
+function openCategoryMatches(categoryId, categoryTitle) {
+    appState.currentCategory = categoryId;
+    
+    document.getElementById('categoryGridView').style.display = 'none';
+    document.getElementById('matchListView').style.display = 'block';
+    document.getElementById('selectedCategoryTitle').innerText = categoryTitle;
+    
+    // Hide Notice Banner and Premium Banner
+noticeBanner.style.display = 'none';
+const premiumBanner = document.getElementById('premiumBannerSlider');
+if (premiumBanner) premiumBanner.style.display = 'none';
+
+// Hide Main Header (Title & Theme Toggle)
+
+    
+    // Hide Main Header (Title & Theme Toggle)
+    const mainHeader = document.getElementById('mainHeader');
+    if (mainHeader) mainHeader.style.display = 'none';
+    
+    // শুধু সিলেক্ট করা ক্যাটাগরির ম্যাচ রেন্ডার হবে
+    renderMatches();
+}
+
+
+
+// ব্যাক বাটনের ফাংশন
+function backToCategories() {
+    document.getElementById('categoryGridView').style.display = 'block';
+    document.getElementById('matchListView').style.display = 'none';
+    appState.currentCategory = 'all'; 
+    
+    // Notice Banner আবার Show করা হলো 
+noticeBanner.style.display = 'flex';
+
+// Premium Banner আবার Show করা হলো (যদি ব্যানার থাকে)
+const premiumBanner = document.getElementById('premiumBannerSlider');
+const hasPremiumBanners = document.getElementById('bannerSlidesWrapper')?.children.length > 0;
+if (premiumBanner && hasPremiumBanners) premiumBanner.style.display = 'block';
+
+// Main Header আবার দেখানো হলো
+
+    const mainHeader = document.getElementById('mainHeader');
+    if (mainHeader) mainHeader.style.display = 'flex';
+    
+    // গ্রিড রিফ্রেশ করা যাতে লাইভ কাউন্ট আপডেট হয়
+    renderCategoryGrid();
+}
+
+
+
+
+
+let currentAdSettings = { link: "", reward: 5, timer: 15 };
+let isWatchingAd = false;
+
+
+// Load Ad Settings
+database.ref('settings/ads').on('value', snap => {
+    const data = snap.val() || {};
+    currentAdSettings.link = data.link || "";
+    currentAdSettings.reward = parseInt(data.reward) || 5;
+    currentAdSettings.timer = parseInt(data.timer) || 15;
+    
+    if(document.getElementById('adRewardDisplay')) {
+        document.getElementById('adRewardDisplay').textContent = currentAdSettings.reward;
+    }
+});
+
+// Event Listeners for Ads
+document.getElementById('freeCoinMenuBtn')?.addEventListener('click', () => {
+    // এখন আর লিংক চেক করার দরকার নেই, সরাসরি মডাল ওপেন হবে
+    document.getElementById('startAdBtn').style.display = 'block';
+    document.getElementById('adTimerSection').style.display = 'none';
+    document.getElementById('adsModal').classList.add('active');
+});
+
+document.getElementById('closeAdsModal')?.addEventListener('click', () => {
+    if(isWatchingAd) {
+        alert("Please wait for the ad to finish to get your reward!");
+        return;
+    }
+    document.getElementById('adsModal').classList.remove('active');
+});
+
+document.getElementById('startAdBtn')?.addEventListener('click', () => {
+    if(isWatchingAd) return;
+    
+    isWatchingAd = true;
+    const btn = document.getElementById('startAdBtn');
+    const originalText = btn.innerHTML;
+    
+    // বাটনে লোডিং এনিমেশন দেওয়া
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading Ad...';
+    btn.disabled = true;
+
+    // Monetag Rewarded Interstitial SDK কল করা
+    if (typeof show_10639013 === 'function') {
+        show_10639013().then(() => {
+            // ইউজার অ্যাড সম্পূর্ণ দেখলে এই ফাংশন রান হবে এবং কয়েন দিয়ে দিবে
+            claimAdReward();
+            
+            // বাটন আগের অবস্থায় ফিরিয়ে আনা
+            isWatchingAd = false;
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }).catch(e => {
+            // ইউজার অ্যাড কেটে দিলে বা লোড না হলে
+            console.error("Ad Error:", e);
+            // alert("No ads available right now. Please try again later.");
+            
+            // বাটন রিস্টোর করা
+            isWatchingAd = false;
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    } else {
+        alert("Ads are not fully loaded yet. Please wait a moment or check your internet connection.");
+        isWatchingAd = false;
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+});
+
+function claimAdReward() {
+    // অ্যাডমিন প্যানেল থেকে সেট করা রিওয়ার্ড, অথবা ডিফল্ট 5
+    const rewardAmount = currentAdSettings.reward || 5; 
+
+    database.ref('users/' + appState.userId).once('value').then(snap => {
+        const user = snap.val() || {};
+        const currentCoins = parseInt(user.coins) || 0;
+        const newCoins = currentCoins + rewardAmount;
+        
+        return database.ref(`users/${appState.userId}`).update({ coins: newCoins });
+    }).then(() => {
+        const timerSection = document.getElementById('adTimerSection');
+        const startBtn = document.getElementById('startAdBtn');
+        
+        // আগের অরিজিনাল HTML সেভ করে রাখা হচ্ছে যাতে মডাল ভাঙবে না
+        const originalHTML = timerSection.innerHTML; 
+
+        timerSection.style.display = 'block';
+        timerSection.innerHTML = `<div style="color: var(--success); font-weight: bold; font-size: 18px;"><i class="fas fa-check-circle"></i> +${rewardAmount} Coins Added!</div>`;
+        startBtn.style.display = 'none';
+        
+        // প্রোফাইলের কয়েন রিয়েল-টাইম আপডেট করা
+        if(document.getElementById('statCoins')) {
+            const current = parseInt(document.getElementById('statCoins').textContent) || 0;
+            document.getElementById('statCoins').textContent = current + rewardAmount;
+        }
+        
+        // ৩ সেকেন্ড পর মডাল অটোমেটিক বন্ধ হবে এবং সবকিছু রিসেট হবে
+        setTimeout(() => {
+            document.getElementById('adsModal').classList.remove('active');
+            
+            // রিসেট UI (পরবর্তীতে আবার অ্যাড দেখার জন্য)
+            startBtn.style.display = 'block';
+            timerSection.style.display = 'none';
+            timerSection.innerHTML = originalHTML; // অরিজিনাল ডিজাইন ফিরিয়ে আনা হলো
+        }, 3000);
+        
+    }).catch(err => {
+        alert("Error claiming reward: " + err.message);
+    });
+}
+
+
+function openMatchScoreboardModal(matchId) {
+    const match = appState.results.find(m => m.id === matchId);
+    if (!match) return;
+
+    const content = document.getElementById('matchScoreboardContent');
+    
+    // যদি অ্যাডমিন রেজাল্ট আপডেট না করে থাকে
+    if (!match.results || Object.keys(match.results).length === 0) {
+        content.innerHTML = `
+            <div class="no-data" style="padding: 30px;">
+                <i class="fas fa-clipboard-list" style="font-size:40px; margin-bottom:10px;"></i>
+                <p>Scoreboard is not updated yet by the admin.</p>
+            </div>
+        `;
+    } else {
+        let resultsArray = Object.values(match.results);
+        
+        // কে কত টাকা জিতেছে সেই অনুযায়ী বড় থেকে ছোট সর্ট করা, টাকা সমান হলে কিল অনুযায়ী সর্ট হবে
+        resultsArray.sort((a, b) => b.prize - a.prize || b.kills - a.kills);
+
+        let tableHTML = `
+            <div class="points-table-container">
+                <table class="points-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align:center;">Rank</th>
+                            <th style="text-align:left;">Player Info</th>
+                            <th style="text-align:center;">Kills</th>
+                            <th style="text-align:right;">Won (৳)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        resultsArray.forEach((player, index) => {
+            let prizeHtml = player.prize > 0 ? `<span style="color:var(--success); font-weight:bold;">৳${player.prize}</span>` : `<span style="color:var(--gray);">৳0</span>`;
+            let winBadge = player.isWin ? `<span style="font-size:9px; background:var(--warning); color:#000; padding:2px 5px; border-radius:4px; margin-left:5px; font-weight:bold;">Booyah</span>` : '';
+            let rankClass = index < 3 ? `rank-${index + 1}` : '';
+            
+            tableHTML += `
+                <tr>
+                    <td class="rank-cell ${rankClass}">#${index + 1}</td>
+                    <td style="text-align:left;">
+                        <div style="font-weight:700; color:var(--text-light); font-size:13px;">
+                            ${player.playerName} ${winBadge}
+                        </div>
+                    </td>
+                    <td style="font-weight:bold; color:var(--text-light); text-align:center;">${player.kills}</td>
+                    <td style="text-align:right;">${prizeHtml}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `</tbody></table></div>`;
+        content.innerHTML = tableHTML;
+        
+        // Dark mode color fix
+        if(document.body.classList.contains('dark-mode')) {
+            content.querySelectorAll('[style*="color:var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+        }
+    }
+    
+    document.getElementById('matchScoreboardModal').classList.add('active');
+}
+
+// --- DEVICE IDENTITY SYSTEM ---
+function getDeviceInfo() {
+    let deviceName = "Unknown Device";
+    let userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    
+    // Telegram Web App API থেকে প্ল্যাটফর্ম চেক করা
+    let tgPlatform = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.platform) ? window.Telegram.WebApp.platform : 'unknown';
+
+    if (tgPlatform === 'android' || /android/i.test(userAgent)) {
+        // Android এর User-Agent থেকে ডিভাইসের নির্দিষ্ট মডেল বের করার চেষ্টা
+        // সাধারণত লেখা থাকে: (Linux; Android 13; SM-G998B Build/...) বা (Linux; Android 12; Redmi Note 9 Pro)
+        let match = userAgent.match(/Android\s+[0-9\.]+\s*;\s*([^;)]+)\s*[;)]/i);
+        
+        if (match && match[1]) {
+            let model = match[1].trim();
+            // অনেক সময় Build/... লেখা থাকে, সেটা রিমুভ করা
+            model = model.split('Build')[0].trim();
+            
+            // যদি মডেল পাওয়া যায় এবং সেটা শুধু 'wv' না হয়
+            if (model && model.toLowerCase() !== 'wv' && model !== 'Android') {
+                deviceName = "Android (" + model + ")";
+            } else {
+                deviceName = "Android Device";
+            }
+        } else {
+            deviceName = "Android Device";
+        }
+    } else if (tgPlatform === 'ios' || /iPhone|iPad|iPod/i.test(userAgent)) {
+        // অ্যাপল নির্দিষ্ট মডেল দেয় না, তাই শুধু iPhone বা iPad বের করা যায়
+        if (/iPad/i.test(userAgent)) {
+            deviceName = "Apple iPad";
+        } else {
+            deviceName = "Apple iPhone";
+        }
+    } else if (tgPlatform === 'tdesktop' || tgPlatform === 'windows' || /Windows NT/i.test(userAgent)) {
+        deviceName = "Windows PC";
+    } else if (tgPlatform === 'macos' || /Macintosh|Mac OS X/i.test(userAgent)) {
+        deviceName = "Mac OS";
+    } else if (tgPlatform === 'web' || tgPlatform === 'weba') {
+        deviceName = "Web Browser";
+    }
+
+    // ইউনিক Device ID তৈরি করা (যদি আগে থেকে না থাকে)
+    let deviceId = localStorage.getItem('nexus_device_id');
+    if (!deviceId) {
+        deviceId = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('nexus_device_id', deviceId);
+    }
+
+    return { deviceName, deviceId };
+}
+
+
+// --- Result Section: Search & Filter Logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    const searchResultInput = document.getElementById('searchResult');
+    const resultTabs = document.querySelectorAll('#results-section .lb-tab');
+
+    if (searchResultInput) {
+        searchResultInput.addEventListener('input', applyResultsFilter);
+    }
+
+    resultTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            resultTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            applyResultsFilter();
+        });
+    });
+});
+
+function applyResultsFilter() {
+    const searchTerm = (document.getElementById('searchResult').value || '').toLowerCase();
+    const activeTab = document.querySelector('#results-section .lb-tab.active');
+    const filterType = activeTab ? activeTab.getAttribute('data-filter') : 'all';
+
+    const filteredResults = appState.results.filter(match => {
+        const matchesSearch = match.title.toLowerCase().includes(searchTerm) || 
+                              (match.id && match.id.toLowerCase().includes(searchTerm));
+        
+        let matchesTab = true;
+        if (filterType !== 'all') {
+            const matchCategory = (match.category || '').toLowerCase();
+            // This part checks if the match category matches the tab's data-filter
+            matchesTab = matchCategory === filterType || matchCategory.includes(filterType);
+        }
+        return matchesSearch && matchesTab;
+    });
+
+    renderFilteredResults(filteredResults);
+}
+
+
+function renderFilteredResults(filteredArray) {
+    // অরিজিনাল ডাটা ব্যাকআপ রেখে শুধু UI আপডেট করার ট্রিক
+    const originalResults = appState.results;
+    appState.results = filteredArray;
+    renderResults(); 
+    appState.results = originalResults;
+}
+
+// --- Prize Pool Modal Helper ---
+function openPrizePoolModalById(matchId) {
+    const match = appState.results.find(m => m.id === matchId) || appState.matches.find(m => m.id === matchId);
+    if(match) {
+        openPrizePoolModal(match);
+    }
+}
+
+// ==========================================
+// 🌟 PREMIUM BANNER SLIDER LOGIC 
+// ==========================================
+let bannerCurrentIndex = 0;
+let bannerIntervalTimer;
+
+function initPremiumBanners(banners) {
+    const sliderContainer = document.getElementById('premiumBannerSlider');
+    const slidesWrapper = document.getElementById('bannerSlidesWrapper');
+    const indicatorsWrapper = document.getElementById('bannerIndicators');
+    
+    if(!banners || banners.length === 0) {
+        sliderContainer.style.display = 'none';
+        return;
+    }
+    
+    // চেক করুন বর্তমানে কোন সেকশন একটিভ
+    const isPlaySection = appState.currentSection === 'play';
+    const isMatchListActive = document.getElementById('matchListView')?.style.display === 'block';
+    
+    // শুধুমাত্র Play সেকশনের মেইন পেজেই ব্যানার দেখাবে
+    if (isPlaySection && !isMatchListActive) {
+        sliderContainer.style.display = 'block';
+    } else {
+        sliderContainer.style.display = 'none';
+    }
+    
+    slidesWrapper.innerHTML = '';
+
+    indicatorsWrapper.innerHTML = '';
+    
+    banners.forEach((banner, index) => {
+        // ১. স্লাইড তৈরি
+        const slide = document.createElement('div');
+        slide.className = `premium-slide ${index === 0 ? 'active' : ''}`;
+        
+        const imgHTML = `<img src="${banner.imageUrl}" alt="Promo Banner" loading="lazy">`;
+        // যদি টার্গেট লিঙ্ক থাকে, তাহলে ছবিতে ক্লিক করলে লিঙ্কে নিয়ে যাবে
+        if(banner.targetUrl) {
+            slide.innerHTML = `<a href="${banner.targetUrl}" target="_blank">${imgHTML}</a>`;
+        } else {
+            slide.innerHTML = imgHTML;
+        }
+        slidesWrapper.appendChild(slide);
+        
+        // ২. ডটস (Indicator) তৈরি
+        const dot = document.createElement('div');
+        dot.className = `indicator-dot ${index === 0 ? 'active' : ''}`;
+        dot.onclick = () => switchBannerSlide(index);
+        indicatorsWrapper.appendChild(dot);
+    });
+    
+    // অটো-প্লে শুরু (৪ সেকেন্ড পরপর)
+    startBannerRotation(banners.length);
+}
+
+function switchBannerSlide(index) {
+    const slides = document.querySelectorAll('.premium-slide');
+    const dots = document.querySelectorAll('.indicator-dot');
+    
+    if(slides.length === 0) return;
+    
+    slides.forEach(s => s.classList.remove('active'));
+    dots.forEach(d => d.classList.remove('active'));
+    
+    slides[index].classList.add('active');
+    dots[index].classList.add('active');
+    bannerCurrentIndex = index;
+}
+
+function startBannerRotation(totalSlides) {
+    clearInterval(bannerIntervalTimer);
+    if(totalSlides <= 1) return; // ১টি স্লাইড হলে অটো-প্লে দরকার নেই
+    
+    bannerIntervalTimer = setInterval(() => {
+        let nextIndex = (bannerCurrentIndex + 1) % totalSlides;
+        switchBannerSlide(nextIndex);
+    }, 4000); // 4 Seconds
+}
+
+// ফায়ারবেস থেকে রিয়েল-টাইমে ব্যানার লোড করা
+database.ref('banners').on('value', snapshot => {
+    let bannersArray = [];
+    snapshot.forEach(child => {
+        bannersArray.push(child.val());
+    });
+    // নতুন আপলোড করা ব্যানার আগে দেখাতে চাইলে Array উল্টে দিন
+    initPremiumBanners(bannersArray.reverse());
+});
+
+// Open/Close Task Full Page Section
+function openDailyTask() {
+    let taskSection = document.getElementById('daily-task-section');
+    taskSection.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Disable background scrolling
+}
+
+function closeDailyTask() {
+    let taskSection = document.getElementById('daily-task-section');
+    taskSection.style.animation = 'slideInTask 0.3s cubic-bezier(0.4, 0, 0.2, 1) reverse forwards';
+    setTimeout(() => {
+        taskSection.style.display = 'none';
+        taskSection.style.animation = 'slideInTask 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards'; // Reset animation
+        document.body.style.overflow = 'auto';
+    }, 300);
+}
+
+// Category Tabs Functionality
+document.querySelectorAll('.task-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        // Remove active class from all tabs
+        document.querySelectorAll('.task-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+
+        let filter = this.getAttribute('data-filter');
+        let cards = document.querySelectorAll('.modern-task-card');
+
+        cards.forEach(card => {
+            if(filter === 'all') {
+                card.style.display = 'flex';
+            } else if (card.getAttribute('data-status') === filter) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Task Claim Animation Logic
+function claimTask(btn) {
+    let card = btn.closest('.modern-task-card');
+    
+    // Add loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.style.animation = 'none';
+    btn.style.pointerEvents = 'none';
+    
+    // Simulate API Call / Processing Delay
+    setTimeout(() => {
+        // Update Card Status to Completed
+        card.classList.remove('ready');
+        card.classList.add('completed');
+        card.setAttribute('data-status', 'completed');
+        
+        let actionDiv = card.querySelector('.task-action');
+        actionDiv.innerHTML = '<button class="task-btn-modern done-btn" disabled><i class="fas fa-check"></i> Done</button>';
+        
+        // Example: Update coin balance dynamically
+        let currentBalance = parseInt(document.getElementById('taskCoinBalance').innerText.replace(/,/g, ''));
+        document.getElementById('taskCoinBalance').innerText = (currentBalance + 100).toLocaleString();
+
+        // Re-filter if user is currently on the "Pending" tab
+        let activeTab = document.querySelector('.task-tab.active').getAttribute('data-filter');
+        if(activeTab === 'pending') {
+            card.style.opacity = '0';
+            setTimeout(() => { card.style.display = 'none'; card.style.opacity = '1'; }, 300);
+        }
+    }, 800);
+}
+
+</script>
+<div class="modal-overlay" id="maintenanceModal" style="z-index: 100000; background: #0f172a;">
+    <div class="modal" style="text-align: center; border: 1px solid #f59e0b;">
+        <div style="font-size: 50px; color: #f59e0b; margin-bottom: 20px;">
+            <i class="fas fa-tools"></i>
+        </div>
+        <h2 style="color: white; margin-bottom: 10px;">SYSTEM UPDATE</h2>
+        
+        <p style="color: var(--gray); margin-bottom: 20px;">
+            The app is currently under maintenance for upgrades. We will be back online shortly. Please wait...
+        </p>
+
+        <button onclick="window.Telegram.WebApp.close()" class="join-btn" style="background: #3b82f6; width: 100%;">Close App</button>
+    </div>
+</div>
+
+
+<div class="modal-overlay" id="banModal" style="z-index: 9999; background: #0f172a;">
+    <div class="modal" style="text-align: center; border: 1px solid #ef4444;">
+        <div style="font-size: 50px; color: #ef4444; margin-bottom: 20px;">
+            <i class="fas fa-user-slash"></i>
+        </div>
+        <h2 style="color: #ef4444; margin-bottom: 10px;">ACCOUNT BANNED</h2>
+        
+        <p style="color: var(--gray); margin-bottom: 15px;">
+            Your account has been suspended by the admin.
+        </p>
+
+        <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">
+            <div style="font-size: 12px; color: #ef4444; font-weight: bold; text-transform: uppercase;">Ban Reason:</div>
+            <div id="banReasonDisplay" style="color: white; font-weight: 500; margin-top: 5px;">
+                </div>
+        </div>
+        
+        <br>
+        <button onclick="window.Telegram.WebApp.close()" class="join-btn" style="background: #334155; width: 100%;">Close App</button>
+    </div>
+</div>
+
+<audio id="ldMusicPlayer" loop></audio>
+
+
+
+
+
+</body>
+
+    <script src="user.js"></script>
+</html>
