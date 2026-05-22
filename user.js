@@ -1,2198 +1,1287 @@
-// ১. আগে Telegram WebApp ভেরিয়েবলটি তৈরি করুন (const ব্যবহার করে)
-const tg = window.Telegram.WebApp;
-tg.expand();
-tg.enableClosingConfirmation();
-
-// ২. ডিবাগিং অ্যালার্ট (এখন কমেন্ট করা আছে, ইউজাররা এটি আর দেখতে পাবে না)
-// alert("Init Data: " + tg.initData);
-
-// আপনার ক্লাউডফ্লেয়ার ওয়ার্কারের আসল URL
-const WORKER_URL = "https://polished-disk-2b4e.tirtharoyvuson.workers.dev/"; 
-
-// ৩. গ্লোবাল অ্যাপ স্টেট (আধুনিক let ব্যবহার করা হলো)
-let appState = {
-    currentUser: null,
-    userId: null,
-    matches: [],
-    esportsData: {
-        matches: [],
-        registrations: {}, 
-        counts: {}, 
-        points: [],
-        history: []
-    },
-    myMatches: [],
-    results: [],
-    tasks: [], 
-    rulesData: [],
-    transactions: [],
-    supportData: [],
-    adminConfig: {
-        rules: ""
-    },
-    currentSection: 'play',
-    currentCategory: 'all',
-    darkMode: false,
-    walletBalance: 0
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 
-// --- সিকিউর টেলিগ্রাম অটো লগইন ফাংশন ---
-async function initSecureTelegramAuth() {
-    if (!tg.initData) {
-        alert("Please open this app inside Telegram!");
-        return;
-    }
-    try {
-        const response = await fetch(WORKER_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ initData: tg.initData, action: "login" })
-        });
-        const data = await response.json();
-        if (response.ok && data.token) {
-            // ফায়ারবেসে টোকেন দিয়ে সিকিউর লগইন
-            const userCredential = await firebase.auth().signInWithCustomToken(data.token);
-            appState.userId = userCredential.user.uid;
-            console.log("Secure Login Success! UID:", appState.userId);
-        } else {
-            alert("Verification Failed: " + (data.error || "Unknown Error"));
-        }
-    } catch (error) {
-        console.error("Auth Error:", error);
-    }
-}
-
-// অ্যাপ লোড হওয়ার সাথে সাথে লগইন রান হবে
-document.addEventListener("DOMContentLoaded", () => {
-    initSecureTelegramAuth();
-});
-
-let currentHistoryTab = 'deposit'; 
-let currentEsportsHistoryTab = 'all';
-
-
-        // DOM Elements
-        const themeToggle = document.getElementById('themeToggle');
-        const noticeBanner = document.getElementById('noticeBanner');
-        const noticeText = document.getElementById('noticeText');
-        const footerBtns = document.querySelectorAll('.footer-btn');
-        const sections = document.querySelectorAll('.section');
-        const categories = document.querySelectorAll('.category');
-        const matchesContainer = document.getElementById('matchesContainer');
-        const noMatches = document.getElementById('noMatches');
-        const joinModal = document.getElementById('joinModal');
-        const closeJoinModal = document.getElementById('closeJoinModal');
-        const joinForm = document.getElementById('joinForm');
-        const joinTypeSelect = document.getElementById('joinType');
-        const playerNamesContainer = document.getElementById('playerNamesContainer');
-        const joinRulesText = document.getElementById('joinRulesText');
-        
-        // Participants Modal Elements
-        const participantsModal = document.getElementById('participantsModal');
-        const closeParticipantsModal = document.getElementById('closeParticipantsModal');
-        const participantsListContent = document.getElementById('participantsListContent');
-
-        // Prize Pool Modal Elements
-        const prizePoolModal = document.getElementById('prizePoolModal');
-        const closePrizePoolModal = document.getElementById('closePrizePoolModal');
-        const prizePoolContent = document.getElementById('prizePoolContent');
-
-        const roomInfoModal = document.getElementById('roomInfoModal');
-        const closeRoomModal = document.getElementById('closeRoomModal');
-        
-        // Profile Elements
-        const profileName = document.getElementById('profileName');
-        const profileUsername = document.getElementById('profileUsername');
-        const walletBalance = document.getElementById('walletBalance');
-        const depositBtn = document.getElementById('depositBtn');
-        const withdrawBtn = document.getElementById('withdrawBtn');
-        
-        // Profile New Feature Elements
-        const redeemBtn = document.getElementById('redeemBtn');
-        const referBtn = document.getElementById('referBtn');
-        const rulesBtn = document.getElementById('rulesBtn');
-        const supportBtn = document.getElementById('supportBtn');
-        const tasksBtn = document.getElementById('tasksBtn');
-        const historyBtn = document.getElementById('historyBtn');
-
-        const redeemModal = document.getElementById('redeemModal');
-        const closeRedeemModal = document.getElementById('closeRedeemModal');
-        const applyRedeemBtn = document.getElementById('applyRedeemBtn');
-        
-        const referModal = document.getElementById('referModal');
-        const closeReferModal = document.getElementById('closeReferModal');
-        const referLinkText = document.getElementById('referLinkText');
-        const copyReferBtn = document.getElementById('copyReferBtn');
-
-        const infoModal = document.getElementById('infoModal');
-        const closeInfoModal = document.getElementById('closeInfoModal');
-        const infoModalTitle = document.getElementById('infoModalTitle');
-        const infoModalContent = document.getElementById('infoModalContent');
-
-        
-
-        
-        const historyListContent = document.getElementById('historyListContent');
-        
-        // Esports Elements
-        const esportsTabs = document.querySelectorAll('.esports-tab');
-        const esportsContents = document.querySelectorAll('.esports-content');
-        const esportsMatchesView = document.getElementById('esportsMatchesView');
-        const esportsPointsView = document.getElementById('esportsPointsView');
-        const esportsHistoryView = document.getElementById('esportsHistoryView');
-        
-        // New Esports Modal Elements
-        const esportsJoinModal = document.getElementById('esportsJoinModal');
-        const closeEsportsJoinModal = document.getElementById('closeEsportsJoinModal');
-        const esportsJoinForm = document.getElementById('esportsJoinForm');
-        
-        // Specific Points Modal
-        const esportsMatchPointsModal = document.getElementById('esportsMatchPointsModal');
-        const closeEsportsMatchPointsModal = document.getElementById('closeEsportsMatchPointsModal');
-
-        // আপনার Cloudflare Worker URL
-const CLOUDFLARE_WORKER_URL = "https://divine-lab-ced7.tirtharoyvuson.workers.dev/";
-
-document.addEventListener('DOMContentLoaded', function() {
-    // অ্যাপ লোড হলে প্রথমেই ডাটাবেস কল না করে, সিকিউর লগইন প্রসেস শুরু করবে
-    secureFirebaseLogin();
-});
-
-async function secureFirebaseLogin() {
-    try {
-        const initData = tg.initData;
-        
-        // যদি কেউ টেলিগ্রাম ছাড়া সরাসরি ব্রাউজার থেকে ওপেন করে
-        if (!initData) {
-            console.warn("Telegram environment not found. Running in demo/testing mode.");
-            startLoadingDatabaseData();
-            return;
-        }
-
-        // ১. ক্লাউডফ্লেয়ার ওয়ার্কার থেকে কাস্টম টোকেন আনা
-        const response = await fetch(CLOUDFLARE_WORKER_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ initData: initData })
-        });
-
-        if (!response.ok) {
-            throw new Error('Telegram Data Verification Failed!');
-        }
-
-        const data = await response.json();
-        
-        // ২. ফায়ারবেসে কাস্টম টোকেন দিয়ে লগইন করা
-        const userCredential = await firebase.auth().signInWithCustomToken(data.token);
-        console.log("Firebase Secure Login Successful! UID:", userCredential.user.uid);
-
-        // ৩. লগইন সফল হলে মূল ডাটাবেসের কাজ শুরু হবে
-        startLoadingDatabaseData();
-
-    } catch (error) {
-        console.error("Security Check Error:", error.message);
-        alert("Authentication failed! Please make sure you are opening the app from Telegram.");
-    }
-}
-
-// এই ফাংশনটি তখনই কল হবে, যখন ইউজার ১০০% ভেরিফায়েড
-function startLoadingDatabaseData() {
-    initApp();
-    setupEventListeners();
-    loadNotice();
-    loadMatches();
-    loadUserProfile();
-    loadWallet();
-    startLuckyDrawTimers();
-}
-
-        
-        function checkMaintenanceMode() {
-    database.ref('settings/maintenanceMode').on('value', (snapshot) => {
-        const isMaintenanceOn = snapshot.val() === true;
-        const maintenanceModal = document.getElementById('maintenanceModal');
-        const banModal = document.getElementById('banModal');
-        
-        if (isMaintenanceOn) {
-            // Maintenance Mode On থাকলে মডাল দেখাবে এবং স্ক্রল বন্ধ করবে
-            maintenanceModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        } else {
-            // Maintenance Mode Off থাকলে মডাল সরিয়ে নিবে
-            maintenanceModal.classList.remove('active');
-            // যদি ইউজার ব্যান না হয়ে থাকে, তাহলেই কেবল স্ক্রল চালু করবে
-            if (!banModal.classList.contains('active')) {
-                document.body.style.overflow = 'auto';
-            }
-        }
-    });
-}
-
-      // user.html - এর স্ক্রিপ্টের ভিতরে checkBanStatus ফাংশনটি রিপ্লেস করুন
-
-function checkBanStatus() {
-    if (!appState.userId) return;
-
-    // পুরো ইউজার নোডটি চেক করা হচ্ছে (isBanned এবং banReason পাওয়ার জন্য)
-    database.ref('users/' + appState.userId).on('value', (snapshot) => {
-        const user = snapshot.val() || {};
-        
-        if (user.isBanned === true) {
-            // মডাল দেখানো
-            document.getElementById('banModal').classList.add('active');
-            document.body.style.overflow = 'hidden';
-            
-            // কারণ সেট করা (যদি অ্যাডমিন কিছু না লেখে তবে ডিফল্ট মেসেজ দেখাবে)
-            const reason = user.banReason || "Violation of Terms & Conditions";
-            document.getElementById('banReasonDisplay').innerText = reason;
-        } else {
-            // আনব্যান থাকলে মডাল সরানো
-            document.getElementById('banModal').classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-    });
-}
-
-
-        function initApp() {
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                enableDarkMode();
-            }
-            
-            // user.html এর initApp ফাংশনের ভিতরে এই অংশটি আপডেট করুন
-if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-    const tgUser = tg.initDataUnsafe.user;
+    <title>Battle Royale Tournament</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
-    // কনসোলে চেক করুন ছবি আসছে কিনা (Debugging)
-    console.log("Telegram User Data:", tgUser);
+    <script src='//libtl.com/sdk.js' data-zone='10639013' data-sdk='show_10639013'></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="user.css">
+</head>
+<body>
+        <div class="container">
+        <div class="header" id="mainHeader"> 
+            <div class="logo">
+                <i class="fas fa-gamepad"></i>
+                <h1>Battle Royale</h1>
+            </div>
+            <button class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
 
-    appState.userId = tgUser.id;
-    checkBanStatus();
-    checkMaintenanceMode();
-    appState.currentUser = {
-        id: tgUser.id,
-        firstName: tgUser.first_name,
-        lastName: tgUser.last_name || '',
-        username: tgUser.username || `user_${tgUser.id}`,
-        languageCode: tgUser.language_code || 'en',
-        // photo_url ছোট হাতের অক্ষরে থাকে
-        photoUrl: tgUser.photo_url || null 
-    };
+
+ 
+
+        <div class="premium-banner-container" id="premiumBannerSlider" style="display:none;">
+    <div id="bannerSlidesWrapper"></div>
+    <div class="banner-indicators" id="bannerIndicators"></div>
+</div>
+
+        
+        <div class="notice-banner" id="noticeBanner">
+    <div class="notice-icon-box">
+        <i class="fas fa-bullhorn"></i>
+    </div>
+    <div class="notice-tag">UPDATE</div>
+    <div class="notice-text-wrapper">
+        <p id="noticeText">Welcome to Battle Royale Tournament! Check out our new matches.</p>
+    </div>
+</div>
+
+       
+        <div class="section active" id="play-section">
     
-       // --- ADD THIS DEVICE IDENTITY CODE ---
-        const deviceInfo = getDeviceInfo();
-    database.ref('users/' + appState.userId).update({
-        deviceName: deviceInfo.deviceName,
-        deviceId: deviceInfo.deviceId,
-        photoUrl: appState.currentUser.photoUrl || null // <-- এই লাইনটি যোগ করা হলো
-    });
+    <div id="categoryGridView">
+        <h3 class="game-title-header">FREE FIRE</h3>
+        <div class="category-grid" id="categoryGridContainer">
+            </div>
+    </div>
+
+    <div id="matchListView" style="display: none;">
+        <div style="display: flex; align-items: center; margin-bottom: 20px;">
+            <button class="theme-toggle" onclick="backToCategories()" style="margin-right: 15px; color: var(--text-light); font-size: 20px;">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 class="section-title" id="selectedCategoryTitle" style="margin-bottom: 0;">Matches</h2>
+        </div>
+        
+        <div class="matches-container" id="matchesContainer">
+            <div class="no-data" id="noMatches">
+                <i class="fas fa-gamepad"></i>
+                <p>No matches found</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+        <div class="section" id="esports-section">
+            <h2 class="section-title">
+                <i class="fas fa-trophy"></i>
+                Esports Hub
+            </h2>
+            
+            <div class="esports-tabs">
+                <div class="esports-tab active" data-es-tab="matches">Matches</div>
+                <div class="esports-tab" data-es-tab="points">Points</div>
+                <div class="esports-tab" data-es-tab="history">History</div>
+            </div>
+            
+            <div class="esports-content active" id="esportsMatchesView">
+                <div class="no-data">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>No scheduled matches</p>
+                </div>
+            </div>
+
+            <div class="esports-content" id="esportsPointsView">
+                <div class="no-data">
+                    <i class="fas fa-list-ol"></i>
+                    <p>Points table empty</p>
+                </div>
+            </div>
+
+            <div class="esports-content" id="esportsHistoryView">
+    <div class="history-tabs" style="margin-bottom: 15px;">
+        <div class="history-tab active" id="esHistTab_all" onclick="switchEsportsHistoryTab('all')">All History</div>
+        <div class="history-tab" id="esHistTab_my" onclick="switchEsportsHistoryTab('my')">My History</div>
+    </div>
+
+    <div id="esportsHistoryListContainer">
+        <div class="no-data">
+            <i class="fas fa-history"></i>
+            <p>No tournament history</p>
+        </div>
+    </div>
+</div>
+
+        </div>
+
+        <div class="section" id="my-matches-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px;">
+        <h2 class="section-title" style="margin-bottom: 0;">
+            <i class="fas fa-history" style="color: var(--primary);"></i> My Matches
+        </h2>
+    </div>
+
+    <div class="my-match-stats" style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <div style="flex: 1; background: var(--card-light); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(59, 130, 246, 0.2);">
+        <div style="font-size: 12px; color: var(--gray); font-weight: 700;">Matches Played</div>
+        <div id="dynamicMatchesPlayed" style="font-size: 22px; font-weight: 900; color: var(--primary);">0</div>
+    </div>
+    <div style="flex: 1; background: var(--card-light); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid rgba(16, 185, 129, 0.2);">
+        <div style="font-size: 12px; color: var(--gray); font-weight: 700;">Total Winnings</div>
+        <div id="dynamicTotalWinnings" style="font-size: 22px; font-weight: 900; color: var(--success);">৳0</div>
+    </div>
+</div>
+
+<div class="lb-tabs" id="myMatchesTabs" style="margin: 0 0 20px 0;">
+    <div class="lb-tab active" onclick="filterMyMatchesList('upcoming', this)">Upcoming</div>
+    <div class="lb-tab" onclick="filterMyMatchesList('playing', this)">Live</div>
+    <div class="lb-tab" onclick="filterMyMatchesList('ended', this)">History</div>
+</div>
 
     
-    updateProfileDisplay();
-    fetchUserJoinedMatches();
+    <div class="matches-container" id="myMatchesContainer">
+        <div class="no-data" id="noMyMatches" style="background: var(--card-light); border-radius: 16px; padding: 50px 20px; border: 1px dashed #cbd5e1;">
+            <div style="width: 70px; height: 70px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                <i class="fas fa-ghost" style="font-size: 35px; color: var(--primary);"></i>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text-light);">No Upcoming Matches</h3>
+            <p style="font-size: 13px; color: var(--gray); margin-bottom: 25px;">You haven't registered for any battles yet. Ready to drop in?</p>
+            <button class="join-btn" onclick="switchSection('play')" style="padding: 10px 25px;">
+                <i class="fas fa-play"></i> Join a Match
+            </button>
+        </div>
+    </div>
+</div>
+
+        <div class="section" id="results-section">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <h2 class="section-title" style="margin:0;">
+            <i class="fas fa-flag-checkered" style="color: var(--primary);"></i> Match Results
+        </h2>
+        <div class="search-box" style="position:relative;">
+            <i class="fas fa-search" style="position:absolute; left:12px; top:10px; color:var(--gray); font-size:12px;"></i>
+            <input type="text" id="searchResult" placeholder="Search match..." style="padding: 8px 15px 8px 32px; border-radius: 20px; border: 1px solid #e5e7eb; font-size:12px; outline:none; background: var(--card-light); color: var(--text-light); width: 140px;">
+        </div>
+    </div>
+
+            <div class="lb-tabs" style="margin: 0 0 20px 0;">
+        <div class="lb-tab active" data-filter="all">All</div>
+        <div class="lb-tab" data-filter="br">Battle Royale</div>
+        <div class="lb-tab" data-filter="squad">BR Survival</div>
+        <div class="lb-tab" data-filter="clash">Clash Squad</div>
+        <div class="lb-tab" data-filter="cs1v1">CS 1v1/2v2</div>
+        <div class="lb-tab" data-filter="lone">Lone Wolf</div>
+        <div class="lb-tab" data-filter="free">Free Match</div>
+    </div>
+
+
     
-    // --- REFERRAL & NEW USER CREATION LOGIC (Dynamic Bonus) ---
-const userRef = database.ref('users/' + appState.userId);
-userRef.once('value').then(snapshot => {
-    if (!snapshot.exists()) {
-        // ১. ইউজার ডাটাবেসে নেই, মানে সে নতুন। তার ডিফল্ট প্রোফাইল তৈরি করুন।
-                let updates = {};
-        // শুধুমাত্র নতুন ইউজার হলেই এই ডাটাগুলো একবারই সেভ হবে, তাই কোড আপডেট হলেও জয়েন ডেট পরিবর্তন হবে না।
-        updates[`users/${appState.userId}`] = {
-            firstName: appState.currentUser.firstName || '',
-            username: appState.currentUser.username || '',
-            balance: 0,
-            winningBalance: 0,
-            joinDate: firebase.database.ServerValue.TIMESTAMP // Advanced Server Time (Hack-proof)
-        };
+    <div class="matches-container" id="resultsContainer">
+        <div style="text-align:center; padding: 40px 20px; color: var(--gray);">
+            <i class="fas fa-spinner fa-spin" style="font-size: 30px; color: var(--primary); margin-bottom: 10px;"></i>
+            <p>Loading Results...</p>
+        </div>
+    </div>
+</div>
 
-
-        // ২. চেক করুন সে কারো রেফার লিংকের মাধ্যমে এসেছে কিনা
-        const startParam = tg.initDataUnsafe ? tg.initDataUnsafe.start_param : null; 
+     
+<div class="section" id="profile-section">
+    <div class="modern-profile-wrapper">
         
-        if (startParam && startParam != appState.userId) {
-            const referrerId = startParam;
-
-            // ৩. ডাটাবেস থেকে অ্যাডমিনের সেট করা বোনাস এমাউন্ট নিয়ে আসুন
-            database.ref('settings/referralBonus').once('value').then(settingSnap => {
-                const REWARD_AMOUNT = parseFloat(settingSnap.val()) || 10; // যদি সেট করা না থাকে, তবে ডিফল্ট ১০
-
-                              if (REWARD_AMOUNT > 0) {
-                    // রেফারারের প্রোফাইলে ব্যালেন্স অ্যাড করা
-                    database.ref('users/' + referrerId).once('value').then(refSnap => {
-                        if (refSnap.exists()) {
-                            const currentBal = parseFloat(refSnap.val().balance) || 0;
-                            const currentReferrals = parseInt(refSnap.val().referrals) || 0; 
-                            const currentEarnings = parseFloat(refSnap.val().referralEarnings) || 0;
-
-                            updates[`users/${referrerId}/balance`] = currentBal + REWARD_AMOUNT;
-                            updates[`users/${referrerId}/referrals`] = currentReferrals + 1;
-                            updates[`users/${referrerId}/referralEarnings`] = currentEarnings + REWARD_AMOUNT;
-
-                            // --- অ্যাডভান্সড: রেফার হওয়া ইউজারের তথ্য সেভ করা ---
-                            const refUserKey = database.ref(`users/${referrerId}/referredUsers`).push().key;
-                            let newUserName = appState.currentUser.firstName || "User";
-                            if(appState.currentUser.lastName) {
-                                newUserName += " " + appState.currentUser.lastName;
-                            }
-                            updates[`users/${referrerId}/referredUsers/${refUserKey}`] = {
-                                name: newUserName,
-                                date: Date.now(),
-                                bonus: REWARD_AMOUNT
-                            };
-
-                            // রেফারারের হিস্ট্রিতে ট্রানজেকশন সেভ করা
-                            const newTxnKey = database.ref('transactions').push().key;
-                            updates[`transactions/${newTxnKey}`] = {
-                                userId: referrerId,
-                                type: 'deposit',
-                                amount: REWARD_AMOUNT,
-                                date: Date.now(),
-                                status: 'success',
-                                method: 'Referral Bonus',
-                                title: `Referral Reward (New User Joined)`
-                            };
-                            
-                            // ডাটাবেস আপডেট
-                            database.ref().update(updates);
-                        } else {
-                            database.ref().update(updates);
-                        }
-                    });
-                }
-  else {
-                    // বোনাস 0 হলে শুধু ইউজার তৈরি হবে
-                    database.ref().update(updates);
-                }
-            });
-        } else {
-            // রেফার ছাড়া আসলে শুধু প্রোফাইল তৈরি হবে
-            database.ref().update(updates);
-        }
-    }
-});
-// ------------------------------------------
-
-}
-
-            
-             else {
-                appState.userId = 'demo_user_123';
-                appState.currentUser = {
-                    id: 'demo_user_123',
-                    firstName: 'Demo',
-                    lastName: 'User',
-                    username: 'demo_user',
-                    languageCode: 'en'
-                };
-                updateProfileDisplay();
-                fetchUserJoinedMatches();
-            }
-
-            fetchAdminData();
-            fetchTransactions();
-            fetchSupportData();
-        }
-        
-        function fetchAdminData() {
-    // Demo Tasks Removed. Now fetching real tasks.
-    database.ref('tasks').on('value', (snapshot) => {
-        const data = snapshot.val();
-        appState.tasks = [];
-        if (data) {
-            Object.keys(data).forEach(key => {
-                appState.tasks.push({
-                    id: key,
-                    ...data[key]
-                });
-            });
-        }
-            
-    });
-
-    // Rules Fetching (New Logic)
-    database.ref('rules').on('value', (snapshot) => {
-        const data = snapshot.val();
-        appState.rulesData = []; // State এ নতুন ভ্যারিয়েবল
-        if (data) {
-            Object.keys(data).forEach(key => {
-                appState.rulesData.push(data[key]);
-            });
-        }
-    });
-}
-
-      
-        function fetchSupportData() {
-    database.ref('support').on('value', (snapshot) => {
-        const data = snapshot.val() || {};
-        
-        // ১. আপনার অ্যাপের আগের স্টেট আপডেট রাখা (যাতে কোনো এরর না আসে)
-        appState.supportData = [];
-        if (data) {
-            Object.keys(data).forEach(key => {
-                appState.supportData.push(data[key]);
-            });
-        }
-
-        // ২. আমাদের নতুন কার্ড ডিজাইনের রেন্ডার লজিক
-        const grid = document.getElementById('userSupportGrid');
-        if(!grid) return;
-        grid.innerHTML = '';
-        
-        if(Object.keys(data).length === 0) {
-            grid.innerHTML = `
-                <div style="grid-column: 1/-1; text-align:center; padding: 40px; color:var(--text-muted); background:var(--bg-card); border-radius:16px; border:1px dashed var(--border);">
-                    <i class="fas fa-comment-slash" style="font-size:40px; margin-bottom:10px; opacity:0.3;"></i><br>
-                    No support channels available right now.
-                </div>`;
-            return;
-        }
-
-        Object.keys(data).forEach(k => {
-            const item = data[k];
-            const isOnline = item.status === 'online';
-
-            // Image Handling
-            let finalImg = 'https://placehold.co/100x100/1e293b/FFF?text=IMG';
-            if (item.image && item.image.includes('src="')) {
-                const match = item.image.match(/src="([^"]+)"/);
-                if (match) finalImg = match[1];
-            } else if (item.image && item.image.trim() !== '') {
-                finalImg = item.image;
-            }
-
-            // Button Logic
-            let btn = isOnline
-                ? `<a href="${item.link}" target="_blank" class="sup-btn active" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;">
-                     <i class="fas fa-paper-plane"></i> Message Now
-                   </a>`
-                : `<div class="sup-btn" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2); cursor: not-allowed;">
-                     <i class="fas fa-moon"></i> Currently Offline
-                   </div>`;
-
-            // Status Badge Logic
-            let statusBadge = isOnline 
-                ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 800; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
-                     <span style="width: 6px; height: 6px; background: #10b981; border-radius: 50%; display: inline-block; animation: pulse 2s infinite;"></span> ONLINE
-                   </span>`
-                : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 800; letter-spacing: 0.5px; display: flex; align-items: center; gap: 4px;">
-                     <span style="width: 6px; height: 6px; background: #ef4444; border-radius: 50%; display: inline-block;"></span> OFFLINE
-                   </span>`;
-
-            grid.innerHTML += `
-            <div class="sup-card ${isOnline ? '' : 'offline'}">
-                <div class="sup-header">
-                    <img src="${finalImg}" class="sup-icon" onerror="this.onerror=null; this.src='https://placehold.co/100x100/1e293b/FFF?text=Icon';">
-                    <div class="sup-info">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 5px;">
-                            <div class="sup-title">${item.name}</div>
-                            ${statusBadge}
-                        </div>
-                        <div class="sup-msg">${item.message || 'Always here to help you.'}</div>
+        <div class="mp-header">
+            <div class="mp-user-info">
+                <div class="mp-avatar-container">
+                    <div id="profileAvatarContainer">
+                        <i class="fas fa-user-circle" style="font-size: 80px; color: #cbd5e1;"></i>
                     </div>
                 </div>
-                <div style="margin-top: auto;">
-                    ${btn}
+                <h2 id="profileName">Loading...</h2>
+                <p id="profileUsername">@username</p>
+                <div class="mp-rank-tag">
+                    <span id="profileRankName">Bronze</span>
                 </div>
-            </div>`;
-        });
-    });
-}
-
-
-        function fetchTransactions() {
-            appState.transactions = [];
-        }
-
-        function setupEventListeners() {
-        
-            // setupEventListeners() এর ভেতরে depositBtn এর জন্য এই কোডটি দিন
-depositBtn.addEventListener('click', () => {
-    switchSection('deposit'); // এটি নতুন পেজে নিয়ে যাবে
-    loadDepositMethodsPage(); // মেথডগুলো লোড করবে
-});
-
-// setupEventListeners() এর ভিতরে:
-
-withdrawBtn.addEventListener('click', () => {
-    switchSection('withdraw'); // নতুন সেকশনে নিয়ে যাবে
-    loadWithdrawMethodsPage(); // মেথড লোড করবে
-});
-
-
-// Copy Button Logic (New Page)
-document.getElementById('copyNumberBtn').addEventListener('click', () => {
-    const num = document.getElementById('targetNumber').textContent;
-    copyToClipboard(num);
-    const btn = document.getElementById('copyNumberBtn');
-    const originalHTML = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-check"></i>';
-    setTimeout(() => btn.innerHTML = originalHTML, 2000);
-});
-
-// Form Submit Logic (New Page)
-document.getElementById('depositFormPage').addEventListener('submit', function(e) {
-    e.preventDefault();
-    submitDepositPage();
-});
-
-            
-            themeToggle.addEventListener('click', toggleTheme);
-            
-            footerBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-tab');
-                    switchSection(tabId);
-                });
-            });
-            
-            categories.forEach(category => {
-                category.addEventListener('click', function() {
-                    const categoryId = this.getAttribute('data-category');
-                    switchCategory(categoryId);
-                });
-            });
-            
-            esportsTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const tabId = this.getAttribute('data-es-tab');
-                    esportsTabs.forEach(t => t.classList.remove('active'));
-                    this.classList.add('active');
-                    esportsContents.forEach(c => c.classList.remove('active'));
-                    if(tabId === 'matches') esportsMatchesView.classList.add('active');
-                    if(tabId === 'points') esportsPointsView.classList.add('active');
-                    if(tabId === 'history') esportsHistoryView.classList.add('active');
-                    
-                    if(tabId === 'points') renderEsports(); // Re-render to show points cards
-                });
-            });
-
-            closeJoinModal.addEventListener('click', () => joinModal.classList.remove('active'));
-            closeParticipantsModal.addEventListener('click', () => participantsModal.classList.remove('active'));
-            closePrizePoolModal.addEventListener('click', () => prizePoolModal.classList.remove('active'));
-            closeRoomModal.addEventListener('click', () => roomInfoModal.classList.remove('active'));
-            
-            closeRedeemModal.addEventListener('click', () => redeemModal.classList.remove('active'));
-            closeReferModal.addEventListener('click', () => referModal.classList.remove('active'));
-            closeInfoModal.addEventListener('click', () => infoModal.classList.remove('active'));
-            
-            
-            closeEsportsJoinModal.addEventListener('click', () => esportsJoinModal.classList.remove('active'));
-            // Close Specific Points Modal
-            closeEsportsMatchPointsModal.addEventListener('click', () => esportsMatchPointsModal.classList.remove('active'));
-
-            
-            
-            
-            const closeMatchScoreboardModal = document.getElementById('closeMatchScoreboardModal');
-if(closeMatchScoreboardModal) {
-    closeMatchScoreboardModal.addEventListener('click', () => {
-        document.getElementById('matchScoreboardModal').classList.remove('active');
-    });
-}
-
-            
-            esportsJoinForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                submitEsportsRegistration();
-            });
-
-            redeemBtn.addEventListener('click', () => redeemModal.classList.add('active'));
-            
-                        // --- ADVANCED REFERRAL LOGIC ---
-            referBtn.addEventListener('click', () => {
-                // আপনার বটের ইউজারনেম এবং মিনি অ্যাপের শর্টনেম দিন
-                const botUsername = "de1stmo_bot"; 
-                const appShortName = "app"; 
-                const link = `https://t.me/${botUsername}/${appShortName}?startapp=${appState.userId}`;
                 
-                document.getElementById('referLinkText').textContent = link;
-                document.getElementById('copyReferBtnAdvanced').setAttribute('data-text', link);
-                
-                // ইউজারের ডাটাবেস থেকে রিয়েল-টাইম ডাটা লোড করা
-                database.ref('users/' + appState.userId).once('value').then(snap => {
-                    const user = snap.val() || {};
-                    const totalRefs = parseInt(user.referrals) || 0;
-                    const totalEarned = parseFloat(user.referralEarnings) || 0;
-                    
-                    document.getElementById('advRefTotal').textContent = totalRefs;
-                    document.getElementById('advRefEarned').textContent = totalEarned.toFixed(2);
-                    
-                    // মাইলস্টোন ক্যালকুলেশন
-                    let nextTarget = 5;
-                    if(totalRefs >= 5) nextTarget = 10;
-                    if(totalRefs >= 10) nextTarget = 20;
-                    if(totalRefs >= 20) nextTarget = 50;
-                    if(totalRefs >= 50) nextTarget = 100;
-                    if(totalRefs >= 100) nextTarget = totalRefs + 50;
-                    
-                    const progressPct = Math.min((totalRefs / nextTarget) * 100, 100);
-                    document.getElementById('refMilestoneText').textContent = `${totalRefs} / ${nextTarget}`;
-                    document.getElementById('refProgressBar').style.width = `${progressPct}%`;
-                    
-                    // রিফারেল হিস্ট্রি লোড
-                    const historyContainer = document.getElementById('recentReferralsList');
-                    const referredUsers = user.referredUsers || {};
-                    
-                    if (Object.keys(referredUsers).length === 0) {
-                        historyContainer.innerHTML = `
-                            <div style="text-align: center; padding: 20px; color: var(--gray); font-size: 13px;">
-                                <i class="fas fa-users-slash" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5;"></i><br>
-                                You haven't referred anyone yet.
-                            </div>
-                        `;
-                    } else {
-                        historyContainer.innerHTML = '';
-                        // নতুন জয়েন করা ইউজার আগে দেখানোর জন্য সর্টিং
-                        const usersArray = Object.values(referredUsers).sort((a,b) => b.date - a.date);
-                        
-                        usersArray.forEach(u => {
-                            const d = new Date(u.date);
-                            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                            
-                            // প্রাইভেসি: ইউজারের নামের কিছু অংশ হাইড করা (যেমন: Rakib -> Ra***)
-                            let safeName = u.name;
-                            if(safeName.length > 2) {
-                                safeName = safeName.substring(0, 2) + "***";
-                            }
-                            const initial = safeName.charAt(0).toUpperCase();
-
-                            historyContainer.innerHTML += `
-                                <div class="ref-history-item">
-                                    <div style="display:flex; align-items:center;">
-                                        <div class="ref-avatar">${initial}</div>
-                                        <div>
-                                            <div style="font-size: 14px; font-weight: 700; color: var(--text-light);">${safeName} Joined</div>
-                                            <div style="font-size: 11px; color: var(--gray);"><i class="far fa-clock"></i> ${dateStr}</div>
-                                        </div>
-                                    </div>
-                                    <div style="font-weight: 800; color: var(--success); font-size: 14px;">+৳${u.bonus}</div>
-                                </div>
-                            `;
-                        });
-                        
-                        // ডার্ক মোডের জন্য টেক্সট কালার ফিক্স
-                        if(document.body.classList.contains('dark-mode')) {
-                            historyContainer.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
-                        }
-                    }
-                });
-
-                referModal.classList.add('active');
-            });
-
-            // অ্যাডভান্সড কপি বাটন
-            document.getElementById('copyReferBtnAdvanced').addEventListener('click', function(e) {
-                e.preventDefault();
-                const link = this.getAttribute('data-text');
-                copyToClipboard(link);
-                
-                const originalHTML = this.innerHTML;
-                this.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                setTimeout(() => this.innerHTML = originalHTML, 2000);
-            });
-
-            // ন্যাটিভ শেয়ার বাটন (মোবাইল অ্যাপের জন্য)
-            document.getElementById('shareReferBtnAdvanced').addEventListener('click', function() {
-                const link = document.getElementById('copyReferBtnAdvanced').getAttribute('data-text');
-                const shareText = "Hey! Join Battle Royale Tournament using my link and let's play together!";
-                
-                if (navigator.share) {
-                    navigator.share({
-                        title: 'Battle Royale Tournament',
-                        text: shareText,
-                        url: link,
-                    }).catch(err => console.log("Share failed:", err));
-                } else {
-                    // Fallback for Web/Desktop (Telegram Share)
-                    window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(shareText)}`, '_blank');
-                }
-            });
-
-if (copyReferBtn) {
-    copyReferBtn.addEventListener('click', function(e) {
-        // এটি গ্লোবাল লিসেনারকে ব্লক করে ডাইরেক্ট কপি হতে সাহায্য করবে
-        e.preventDefault();
-        e.stopPropagation(); 
-        
-        const textToCopy = referLinkText.textContent;
-        const btn = this;
-        
-        // সাকসেস এনিমেশন এবং ভাইব্রেশন
-        const showSuccess = () => {
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i>';
-            btn.style.color = 'var(--success)';
-            
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-                window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-            }
-            
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.style.color = '';
-            }, 2000);
-        };
-
-        // iOS/Android Fallback Copy (সবচেয়ে কার্যকরী পদ্ধতি)
-        const fallbackCopy = () => {
-            const tempInput = document.createElement("input");
-            tempInput.value = textToCopy;
-            document.body.appendChild(tempInput);
-            
-            // iOS এর জন্য স্পেশাল সিলেকশন
-            tempInput.focus();
-            tempInput.select();
-            tempInput.setSelectionRange(0, 99999); 
-            
-            try {
-                document.execCommand("copy");
-                showSuccess();
-            } catch (err) {
-                alert("Copy failed! Please select the text manually.");
-            }
-            
-            document.body.removeChild(tempInput);
-        };
-
-        // মডার্ন ব্রাউজার API
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(textToCopy)
-                .then(() => showSuccess())
-                .catch(() => fallbackCopy()); // ফেইল করলে ফলব্যাক কাজ করবে
-        } else {
-            fallbackCopy();
-        }
-    });
-}
-
-
-// Elements
-const rulesTabsHeader = document.getElementById('rulesTabsHeader');
-const rulesContentBody = document.getElementById('rulesContentBody');
-
-// --- Rules Button Logic (Modern Profile Style) ---
-rulesBtn.addEventListener('click', () => {
-    // ১. স্টাইল ইনজেকশন (মডার্ন প্রোফাইল ডিজাইনের মতো)
-    if (!document.getElementById('rules-pro-layout-style')) {
-        const style = document.createElement('style');
-        style.id = 'rules-pro-layout-style';
-        style.innerHTML = `
-            .rules-pro-page {
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background-color: var(--light-bg); z-index: 99999;
-                display: flex; flex-direction: column;
-                transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-            body.dark-mode .rules-pro-page { background-color: var(--dark-bg); }
-            .rules-pro-page.active { transform: translateX(0); }
-            
-            /* Profile-style Gradient Header */
-            .rp-header-pro {
-                background: linear-gradient(135deg, var(--primary), #6366f1);
-                padding: 30px 20px 60px 20px;
-                border-radius: 0 0 30px 30px;
-                color: white;
-                box-shadow: 0 10px 20px rgba(59, 130, 246, 0.15);
-                display: flex; align-items: center; gap: 15px;
-            }
-            .rp-header-pro h2 { font-size: 22px; font-weight: 800; margin: 0; letter-spacing: 0.5px; }
-            .rp-back-btn { 
-                background: rgba(255,255,255,0.2); border: none; width: 42px; height: 42px; 
-                border-radius: 12px; color: white; font-size: 18px; display: flex; 
-                align-items: center; justify-content: center; cursor: pointer; 
-                backdrop-filter: blur(5px); transition: 0.2s;
-            }
-            .rp-back-btn:active { transform: scale(0.95); }
-            
-            /* Overlapping Tab Card (Like Wallet Card) */
-            .rp-tabs-container {
-                background: var(--card-light); border-radius: 20px; padding: 12px;
-                margin: -35px 15px 15px 15px; position: relative; z-index: 10;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 1px solid #e5e7eb;
-                display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none;
-            }
-            body.dark-mode .rp-tabs-container { 
-                background: var(--card-dark); border-color: #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
-            }
-            .rp-tabs-container::-webkit-scrollbar { display: none; }
-            
-            /* Tab Buttons */
-            .rp-tab-btn {
-                flex: 0 0 auto; padding: 10px 20px; border-radius: 14px; font-size: 13px; font-weight: 800;
-                cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                background: rgba(148, 163, 184, 0.1); color: var(--gray); border: 1px solid transparent;
-            }
-            body.dark-mode .rp-tab-btn { background: rgba(255,255,255,0.05); }
-            .rp-tab-btn.active {
-                background: linear-gradient(135deg, var(--primary), #2563eb); color: white;
-                box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3); transform: translateY(-2px);
-                border-color: rgba(255,255,255,0.1);
-            }
-            
-            /* Content Area */
-            .rp-content-wrapper {
-                flex: 1; overflow-y: auto; padding: 0 15px 25px 15px;
-            }
-            .rp-content-card {
-                background: var(--card-light); border-radius: 20px; padding: 25px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #e5e7eb;
-                font-size: 14px; line-height: 1.7; color: var(--text-light); min-height: 200px;
-            }
-            body.dark-mode .rp-content-card { 
-                background: var(--card-dark); border-color: #334155; color: var(--text-dark); 
-            }
-            
-            /* Rule List Style inside Content */
-            .rule-bullet {
-                display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px;
-            }
-            .rule-bullet i {
-                color: var(--primary); font-size: 14px; margin-top: 4px;
-            }
-        `;
-        document.head.appendChild(style);
-
-        // HTML তৈরি
-        const pageDiv = document.createElement('div');
-        pageDiv.id = 'rulesProPage';
-        pageDiv.className = 'rules-pro-page';
-        pageDiv.innerHTML = `
-            <div class="rp-header-pro">
-                <button class="rp-back-btn" id="closeRulesProPage"><i class="fas fa-arrow-left"></i></button>
-                <h2><i class="fas fa-book-open" style="margin-right: 8px; opacity: 0.9;"></i> Rules & Terms</h2>
-            </div>
-            <div class="rp-tabs-container" id="rulesProTabs"></div>
-            <div class="rp-content-wrapper">
-                <div class="rp-content-card" id="rulesProContent"></div>
-            </div>
-        `;
-        document.body.appendChild(pageDiv);
-
-        document.getElementById('closeRulesProPage').addEventListener('click', () => {
-            document.getElementById('rulesProPage').classList.remove('active');
-        });
-    }
-
-    const page = document.getElementById('rulesProPage');
-    const tabsContainer = document.getElementById('rulesProTabs');
-    const contentContainer = document.getElementById('rulesProContent');
-
-    page.classList.add('active');
-    tabsContainer.innerHTML = '';
-
-    // ডাটা লোড
-    if (!appState.rulesData || appState.rulesData.length === 0) {
-        contentContainer.innerHTML = `
-            <div style="text-align:center; padding: 50px 10px; color: var(--gray);">
-                <i class="fas fa-clipboard-list" style="font-size: 45px; margin-bottom: 15px; opacity: 0.5;"></i>
-                <p style="font-weight: 700; font-size: 16px;">No rules found.</p>
-                <p style="font-size: 13px; margin-top: 5px;">Admin hasn't configured any rules yet.</p>
-            </div>`;
-    } else {
-        let isFirst = true;
-        appState.rulesData.forEach((rule) => {
-            const btn = document.createElement('div');
-            btn.className = 'rp-tab-btn';
-            btn.innerHTML = `<i class="fas fa-hashtag" style="opacity:0.5; margin-right:4px;"></i> ${rule.title}`;
-            
-            btn.onclick = () => {
-                // ১. সব বাটন থেকে Active ক্লাস রিমুভ
-                Array.from(tabsContainer.children).forEach(child => child.classList.remove('active'));
-
-                // ২. ক্লিক করা বাটনে Active ক্লাস অ্যাড
-                btn.classList.add('active');
-
-                // ৩. কনটেন্ট আপডেট (Modern Formatting)
-                const formattedDescription = rule.description 
-                    ? rule.description.split('\n').map(line => {
-                        if (line.trim() === '') return '<br>';
-                        return `<div class="rule-bullet"><i class="fas fa-check-circle"></i> <span>${line}</span></div>`;
-                      }).join('') 
-                    : '<p style="opacity: 0.7;">No details available.</p>';
-
-                contentContainer.innerHTML = `
-                    <div style="animation: fadeIn 0.3s ease;">
-                        <h3 style="margin-bottom: 20px; color: var(--primary); font-size: 18px; font-weight: 800; border-bottom: 1px dashed rgba(59, 130, 246, 0.3); padding-bottom: 10px;">
-                            ${rule.title}
-                        </h3>
-                        <div>
-                            ${formattedDescription}
-                        </div>
+                <div class="mp-exp-box">
+                    <div class="mp-exp-header">
+                        <span>Level Progress</span>
+                        <span id="profileExpText" style="color: #fcd34d;">0 / 100</span>
                     </div>
-                `;
-                
-                document.querySelector('.rp-content-wrapper').scrollTop = 0;
-            };
-
-            tabsContainer.appendChild(btn);
-
-            // প্রথমটি অটো-সিলেক্ট
-            if (isFirst) {
-                btn.click(); 
-                isFirst = false;
-            }
-        });
-    }
-});
-
-            
-            supportBtn.addEventListener('click', () => {
-    infoModalTitle.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px;">
-            <div style="background:var(--primary); padding:8px 10px; border-radius:12px; color:white; font-size:14px; box-shadow:0 4px 10px rgba(99,102,241,0.3);">
-                <i class="fas fa-headset"></i>
-            </div> 
-            <span style="font-weight:800;">Support Center</span>
-        </div>`;
-    
-    infoModalContent.innerHTML = `
-        <div style="display:flex; justify-content:center; padding:50px;">
-            <i class="fas fa-circle-notch fa-spin" style="font-size:35px; color:var(--primary);"></i>
-        </div>`;
-    
-    infoModal.classList.add('active');
-
-    database.ref('support').once('value').then(supportSnap => {
-        const supportData = supportSnap.val() || {};
-        let html = '';
-
-        // --- Premium Header Banner ---
-        html += `
-            <div class="support-banner-pro">
-                <h3 style="font-size: 20px; font-weight: 800; color: var(--text-light); margin-bottom: 6px;">Need Help?</h3>
-                <p style="font-size: 13px; color: var(--gray); font-weight: 500; margin:0;">Our support team is ready to assist you. Choose a platform below.</p>
-            </div>
-        `;
-
-        if (Object.keys(supportData).length === 0) {
-            html += `
-                <div style="text-align:center; padding: 40px 20px; background: var(--card-light); border-radius:20px; border:2px dashed #cbd5e1;">
-                    <i class="fas fa-comment-dots" style="font-size:45px; color:#cbd5e1; margin-bottom:15px;"></i>
-                    <p style="color:var(--gray); font-size:15px; font-weight:700; margin:0;">No support channels available.</p>
+                    <div class="mp-exp-track">
+                        <div class="mp-exp-fill" id="rankProgressBar" style="width: 0%;"></div>
+                    </div>
                 </div>
-            `;
-        } else {
-            html += '<div class="support-grid">';
+            </div>
+        </div>
+
+        <div class="mp-wallet-card">
+            <div class="mp-wallet-header">
+                <span><i class="fas fa-microchip" style="color: var(--primary); margin-right: 5px;"></i> Main Balance</span>
+            </div>
+            <div class="mp-wallet-balance" id="walletBalance">৳0.00</div>
             
-            Object.values(supportData).forEach(item => {
-                const isOnline = item.status === 'online';
+            <div class="mp-btn-group">
+                <button class="mp-btn mp-btn-dep" id="depositBtn">
+                    <i class="fas fa-plus-circle"></i> Add Funds
+                </button>
+                <button class="mp-btn mp-btn-wit" id="withdrawBtn">
+                    <i class="fas fa-arrow-down"></i> Cashout
+                </button>
+            </div>
+        </div>
+
+        <div class="mp-stats-grid">
+            <div class="mp-stat-box">
+                <i class="fas fa-gamepad mp-stat-icon" style="color: #3b82f6;"></i>
+                <div class="mp-stat-val" id="statMatches">0</div>
+                <div class="mp-stat-label">Matches</div>
+            </div>
+            <div class="mp-stat-box">
+                <i class="fas fa-crosshairs mp-stat-icon" style="color: #ef4444;"></i>
+                <div class="mp-stat-val" id="statKills">0</div>
+                <div class="mp-stat-label">Kills</div>
+            </div>
+            <div class="mp-stat-box">
+                <i class="fas fa-trophy mp-stat-icon" style="color: #10b981;"></i>
+                <div class="mp-stat-val" id="statWins">0</div>
+                <div class="mp-stat-label">Wins</div>
+            </div>
+            <div class="mp-stat-box">
+                <i class="fas fa-coins mp-stat-icon" style="color: #f59e0b;"></i>
+                <div class="mp-stat-val" id="statCoins">0</div>
+                <div class="mp-stat-label">Coins</div>
+            </div>
+        </div>
+
+        <div class="mp-section-title">Quick Actions</div>
+        <div class="mp-action-grid">
+            <div class="mp-action-card" id="leaderboardBtn">
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);"><i class="fas fa-crown"></i></div>
+                <div class="mp-action-text">Leaderboard</div>
+            </div>
+            <div class="mp-action-card" id="luckyDrawMenuBtn">
+                <div class="mp-badge-hot">HOT</div>
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #ec4899, #be185d);"><i class="fas fa-ticket-alt"></i></div>
+                <div class="mp-action-text">Mega Draw</div>
+            </div>
+            <div class="mp-action-card" id="tasksBtn">
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);"><i class="fas fa-tasks"></i></div>
+                <div class="mp-action-text">Daily Quests</div>
+            </div>
+            <div class="mp-action-card" id="redeemBtn">
+                <div class="mp-action-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);"><i class="fas fa-gift"></i></div>
+                <div class="mp-action-text">Promo Code</div>
+            </div>
+            
+            <div class="mp-action-card" id="freeCoinMenuBtn" style="grid-column: span 2; display: flex; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div class="mp-action-icon" style="background: linear-gradient(135deg, #10b981, #047857);"><i class="fas fa-play"></i></div>
+                    <div class="mp-action-text">Watch Ads for Free Coins</div>
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+        </div>
+
+        <div class="mp-section-title">System & Logs</div>
+        <div class="mp-settings-list">
+            <div class="mp-list-item" id="historyBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-history" style="color:#64748b;"></i></div>
+                    Transactions
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+            <div class="mp-list-item" id="referBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-users" style="color:#0ea5e9;"></i></div>
+                    Refer Friends
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+            <div class="mp-list-item" id="rulesBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-book" style="color:#f59e0b;"></i></div>
+                    Terms & Rules
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+            <div class="mp-list-item" id="supportBtn">
+                <div class="mp-list-left">
+                    <div class="mp-list-icon"><i class="fas fa-headset" style="color:#10b981;"></i></div>
+                    Support Center
+                </div>
+                <i class="fas fa-chevron-right" style="color: var(--gray); font-size: 12px;"></i>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+    <div class="footer">
+        <button class="footer-btn active" data-tab="play">
+            <i class="fas fa-play"></i>
+            <span>Play</span>
+        </button>
+        <button class="footer-btn" data-tab="esports">
+            <i class="fas fa-trophy"></i>
+            <span>Esports</span>
+        </button>
+        <button class="footer-btn" data-tab="my-matches">
+            <i class="fas fa-history"></i>
+            <span>My Matches</span>
+        </button>
+        <button class="footer-btn" data-tab="results">
+            <i class="fas fa-flag-checkered"></i>
+            <span>Results</span>
+        </button>
+        <button class="footer-btn" data-tab="profile">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+        </button>
+    </div>
+
+    <div class="modal-overlay" id="joinModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Join Match</h3>
+                <button class="close-modal" id="closeJoinModal">×</button>
+            </div>
+            
+            <div class="join-rules">
+                <i class="fas fa-info-circle"></i>
+                <span id="joinRulesText">Solo: 1 FF Name, Duo: 2 FF Names, Squad: 4 FF Names</span>
+            </div>
+            
+            <form id="joinForm">
+                <input type="hidden" id="selectedMatchId">
+                <input type="hidden" id="selectedMatchType">
                 
-                // Image Parsing Logic
-                let finalImg = 'https://placehold.co/100/e2e8f0/64748b?text=Support';
-                if (item.image && item.image.includes('src="')) {
-                    const match = item.image.match(/src="([^"]+)"/);
-                    if (match) finalImg = match[1];
-                } else if (item.image && item.image.trim() !== '') {
-                    finalImg = item.image;
-                }
+                <div class="form-group">
+                    <label class="form-label">Join Type</label>
+                    <select class="form-input" id="joinType">
+                        <option value="solo">Solo</option>
+                        <option value="duo">Duo</option>
+                        <option value="squad">Squad</option>
+                    </select>
+                </div>
                 
-                // Dynamic Classes based on status
-                const dotClass = isOnline ? 'dot-online' : 'dot-offline';
-                const badgeClass = isOnline ? 'badge-online' : 'badge-offline';
-                const statusText = isOnline ? 'ONLINE' : 'OFFLINE';
-                const iconClass = isOnline ? 'fa-bolt' : 'fa-moon';
-                const defaultMsg = isOnline ? 'Ready to help' : 'Currently away';
+                <div class="form-group">
+                    <label class="form-label">Player Free Fire Names</label>
+                    <div class="player-names-container" id="playerNamesContainer">
+                        <input type="text" class="form-input player-name" placeholder="Enter FF Name" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="join-btn" style="width: 100%;">Join Match</button>
+            </form>
+        </div>
+    </div>
 
-                html += `
-                    <a href="${item.link}" target="_blank" class="support-card-pro" ${!isOnline ? 'style="opacity: 0.8;"' : ''}>
-                        
-                        ${isOnline ? '<div style="position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--success);"></div>' : ''}
-                        
-                        <div class="support-avatar-box">
-                            <img src="${finalImg}" onerror="this.src='https://placehold.co/100/e2e8f0/64748b?text=S'" class="support-avatar-img">
-                            <div class="support-status-dot ${dotClass}"></div>
-                        </div>
-                        
-                        <div class="support-info-pro">
-                            <div class="support-name">
-                                ${item.name}
-                                <span class="support-badge ${badgeClass}">${statusText}</span>
-                            </div>
-                            <div class="support-desc">
-                                <i class="fas ${iconClass}"></i> 
-                                ${item.message || defaultMsg}
-                            </div>
-                        </div>
-                        
-                        <div class="support-action-btn">
-                            <i class="fas fa-paper-plane" style="font-size:14px; margin-left:-2px;"></i>
-                        </div>
-                    </a>
-                `;
-            });
-            html += '</div>';
-        }
-
-        // Dark mode adjustments are now handled entirely by CSS classes!
-        infoModalContent.innerHTML = html;
-        
-        // Dark mode color text fix for the banner
-        if(document.body.classList.contains('dark-mode')) {
-             infoModalContent.querySelectorAll('.support-banner-pro h3').forEach(el => el.style.color = 'var(--text-dark)');
-        }
-    });
-});
-
-
+    <div class="modal-overlay" id="participantsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Participants</h3>
+                <button class="close-modal" id="closeParticipantsModal">×</button>
+            </div>
             
-            tasksBtn.addEventListener('click', () => {
-    openDailyTask(); // এখন আর মডাল না, সরাসরি ফুল-পেজ ওপেন হবে
-    loadTasks(); // <--- পেজ ওপেন হওয়ার সাথে সাথে টাস্ক লোড করার জন্য এটি যোগ করা হলো
-});
-
-
-
-            historyBtn.addEventListener('click', () => {
-    loadTransactions();
-    switchSection('history'); // Modal ওপেন না করে সরাসরি নতুন পেজে নিয়ে যাবে
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // পেজের শুরুতে স্ক্রল করবে
-});
-
-
-            // UPDATED: Redeem Code Logic
-            
-            applyRedeemBtn.addEventListener('click', () => {
-    const codeInput = document.getElementById('promoCodeInput');
-    const code = codeInput.value.trim();
-
-    if (!code) {
-        alert("Please enter a code.");
-        return;
-    }
-
-    applyRedeemBtn.disabled = true;
-    applyRedeemBtn.textContent = "Processing...";
-
-    database.ref('redeemCodes').orderByChild('code').equalTo(code).once('value')
-        .then(snapshot => {
-            if (!snapshot.exists()) {
-                throw new Error("Invalid Redeem Code");
-            }
-
-            const id = Object.keys(snapshot.val())[0];
-            const data = snapshot.val()[id];
-
-            // ১. চেক করা কোড অ্যাক্টিভ কিনা
-            if (data.status !== 'active') {
-                throw new Error("This code is inactive.");
-            }
-
-            // ২. চেক করা লিমিট শেষ কিনা
-            const currentUsers = data.currentUsers || 0;
-            const maxUsers = data.maxUsers || 1; 
-
-            if (currentUsers >= maxUsers) {
-                throw new Error("This code limit has been reached (Full).");
-            }
-
-            // ৩. চেক করা ইউজার আগে ব্যবহার করেছে কিনা
-            if (data.usageLogs) {
-                const alreadyUsed = Object.values(data.usageLogs).some(log => log.userId == appState.userId);
-                if (alreadyUsed) {
-                    throw new Error("You have already used this code.");
-                }
-            }
-
-            // --- সব ঠিক থাকলে ব্যালেন্স অ্যাড এবং লগ তৈরি ---
-            
-            const updates = {};
-            const now = Date.now();
-
-            // A. কোডের ডাটা আপডেট (Current User + 1 এবং Log)
-            updates[`/redeemCodes/${id}/currentUsers`] = currentUsers + 1;
-            
-            const newLogKey = database.ref(`redeemCodes/${id}/usageLogs`).push().key;
-            updates[`/redeemCodes/${id}/usageLogs/${newLogKey}`] = {
-                userId: appState.userId,
-                userName: appState.currentUser.firstName + " " + (appState.currentUser.lastName || ""),
-                userUsername: appState.currentUser.username || "n/a",
-                date: now
-            };
-
-            // B. ট্রানজেকশন হিস্ট্রি আপডেট
-            const newTxnKey = database.ref('transactions').push().key;
-            updates[`/transactions/${newTxnKey}`] = {
-                userId: appState.userId,
-                type: 'deposit',
-                amount: data.amount,
-                date: now,
-                status: 'success',
-                method: 'Redeem Code',
-                title: `Redeemed: ${code}`
-            };
-
-            // C. ইউজারের ব্যালেন্স আপডেট
-            return database.ref('users/' + appState.userId).once('value').then(userSnap => {
-                const currentBal = parseFloat(userSnap.val()?.balance || 0);
-                const newBal = currentBal + parseFloat(data.amount);
-                const totalDep = parseFloat(userSnap.val()?.totalDeposit || 0) + parseFloat(data.amount);
-
-                updates[`/users/${appState.userId}/balance`] = newBal;
-                updates[`/users/${appState.userId}/totalDeposit`] = totalDep;
-
-                return database.ref().update(updates);
-            });
-        })
-        .then(() => {
-            alert("Success! Balance Added.");
-            redeemModal.classList.remove('active');
-            codeInput.value = "";
-            if(typeof loadRedeemHistory === 'function') loadRedeemHistory();
-            loadUserProfile(); // ব্যালেন্স রিফ্রেশ
-        })
-        .catch(error => {
-            alert(error.message);
-        })
-        .finally(() => {
-            applyRedeemBtn.disabled = false;
-            applyRedeemBtn.textContent = "Apply Code";
-        });
-});
-
-
-            joinTypeSelect.addEventListener('change', updatePlayerInputs);
-            
-            joinForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                joinMatch();
-            });
-            
-            
-            
-            document.addEventListener('click', function(e) {
-    const copyBtn = e.target.closest('.copy-btn');
-    if (copyBtn) {
-        e.preventDefault(); 
-        
-        // প্রথমে data-text থেকে নেয়ার চেষ্টা করবে
-        let text = copyBtn.getAttribute('data-text');
-        
-        // যদি data-text ফাঁকা থাকে, তবে স্মার্টলি পাশের স্প্যান থেকে টেক্সট খুঁজে নিবে
-        if (!text) {
-            const parentBox = copyBtn.closest('.value, .mc-room-code-box, .copy-number-box');
-            if (parentBox) {
-                const span = parentBox.querySelector('span');
-                if (span) text = span.textContent.trim();
-            }
-        }
-
-        // যদি কোনো টেক্সট না থাকে বা "Waiting..." লেখা থাকে, তাহলে কপি হবে না
-        if (!text || text === "Waiting...") return;
-
-        // কপি ফাংশন কল করা হলো
-        copyToClipboard(text);
-        
-        // বাটনের আইকন পরিবর্তন (সাকসেস এনিমেশন)
-        const originalHTML = copyBtn.innerHTML;
-        copyBtn.innerHTML = '<i class="fas fa-check"></i>';
-        copyBtn.style.color = 'var(--success)';
-        
-        setTimeout(() => {
-            copyBtn.innerHTML = originalHTML;
-            copyBtn.style.color = '';
-        }, 2000);
-    }
-});
-
-
-        }
-
-        function switchSection(sectionId) {
-    footerBtns.forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-tab') === sectionId);
-    });
+            <div class="participants-list-container" id="participantsListContent">
+                </div>
+        </div>
+    </div>
     
-    sections.forEach(section => {
-        section.classList.toggle('active', section.id === `${sectionId}-section`);
-    });
-
-          // --- Header Logic (Updated) ---
-    // শুধুমাত্র Play সেকশনে মেইন হেডার দেখাবে, অন্যথায় হাইড থাকবে
-    const mainHeader = document.getElementById('mainHeader'); 
-    if (mainHeader) {
-        if (sectionId === 'play') {
-            // চেক করা হচ্ছে ইউজার বর্তমানে কোনো ক্যাটাগরির ভেতরে আছে কিনা
-            const isMatchListActive = document.getElementById('matchListView').style.display === 'block';
-            // যদি ইউজার ক্যাটাগরির ভেতরে থাকে তাহলে none, নাহলে flex
-            mainHeader.style.display = isMatchListActive ? 'none' : 'flex';
-        } else {
-            mainHeader.style.display = 'none';
-        }
-    }
-    // -----------------------------
-
-
-        // Notice banner এবং Premium banner লজিক আপডেট
-    const banner = document.getElementById('noticeBanner');
-    const premiumBanner = document.getElementById('premiumBannerSlider');
-    const hasPremiumBanners = document.getElementById('bannerSlidesWrapper')?.children.length > 0;
-
-    if (sectionId === 'play') {
-        const isMatchListActive = document.getElementById('matchListView').style.display === 'block';
-        banner.style.display = isMatchListActive ? 'none' : 'flex';
-        if (premiumBanner) {
-            premiumBanner.style.display = (isMatchListActive || !hasPremiumBanners) ? 'none' : 'block';
-        }
-    } else {
-        banner.style.display = 'none';
-        if (premiumBanner) premiumBanner.style.display = 'none'; // অন্যান্য পেজে লুকানো থাকবে
-    }
-
-    // - switchSection ফাংশনের ভিতরের মিউজিক লজিক আপডেট করুন
-
-const ldAudio = document.getElementById('ldMusicPlayer');
-if (sectionId === 'luckydraw') {
-    database.ref('settings/ldMusicUrl').once('value').then(snap => {
-        const url = snap.val();
-        if (url) {
-            // যদি গান আগে থেকেই লোড করা থাকে, শুধু play করো
-            if (ldAudio.src === url) {
-                ldAudio.currentTime = 0; // গান শুরু থেকে বাজানোর জন্য
-                ldAudio.play().catch(e => console.log("Music play blocked"));
-            } else {
-                // নতুন URL হলে সেট করে প্লে করো
-                ldAudio.src = url;
-                ldAudio.play().catch(e => console.log("Music play blocked"));
-            }
-        }
-    });
-} else {
-    if (ldAudio) {
-        ldAudio.pause();
-    }
-}
-
-
-    appState.currentSection = sectionId;
     
-    switch(sectionId) {
-        case 'play':
-            loadMatches();
-            break;
-        case 'esports':
-            loadEsports(); 
-            break;
-        case 'my-matches':
-            loadMyMatches();
-            break;
-        case 'results':
-            loadResults();
-            break;
-        case 'profile':
-            loadUserProfile();
-            break;
+
+    <div class="modal-overlay" id="prizePoolModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Prize Breakdown</h3>
+                <button class="close-modal" id="closePrizePoolModal">×</button>
+            </div>
+            
+            <div id="prizePoolContent">
+                </div>
+        </div>
+    </div>
+    
+        <div class="modal-overlay" id="matchScoreboardModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-trophy" style="color: var(--warning); margin-right: 8px;"></i>
+                    Match Winners
+                </h3>
+                <button class="close-modal" id="closeMatchScoreboardModal">×</button>
+            </div>
+            
+            <div id="matchScoreboardContent" style="max-height: 400px; overflow-y: auto;">
+                </div>
+        </div>
+    </div>
+
+
+    <div class="modal-overlay" id="roomInfoModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Room Information</h3>
+                <button class="close-modal" id="closeRoomModal">×</button>
+            </div>
+            
+            <div class="room-info" style="flex-direction: column; border: none; padding-top: 0;">
+                <div class="room-field">
+                    <label>Room ID</label>
+                    <div class="value">
+                        <span id="roomIdDisplay">Waiting...</span>
+                        <button class="copy-btn" id="copyRoomIdBtn" data-text="">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="room-field">
+                    <label>Room Password</label>
+                    <div class="value">
+                        <span id="roomPasswordDisplay">Waiting...</span>
+                        <button class="copy-btn" id="copyRoomPassBtn" data-text="">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; text-align: center; color: var(--warning);">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Do not share this information with others!</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section" id="leaderboard-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e5e7eb; color:var(--text-light); font-size:16px; width:42px; height:42px; border-radius:14px; margin-right:15px; cursor:pointer; transition: 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.03);">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 style="font-size:22px; font-weight:900; margin:0; letter-spacing:-0.5px; color:var(--text-light);">
+            Hall of <span style="color:var(--warning);">Fame</span>
+        </h2>
+    </div>
+
+    <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(234, 88, 12, 0.05)); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 16px; padding: 12px 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.05);">
+        <i class="fas fa-gift" style="font-size: 28px; color: #f59e0b; animation: bounce 2s infinite;"></i>
+        <div>
+            <div style="font-size: 11px; font-weight: 900; color: #d97706; text-transform: uppercase; letter-spacing: 1px;">Season Rewards</div>
+            <div style="font-size: 12px; color: var(--gray); font-weight: 600; margin-top: 2px;">Top 3 players win exclusive prizes at the end of the month!</div>
+        </div>
+    </div>
+
+    <div class="lb-tabs" id="lbTabsContainer" style="margin: 0 0 15px 0;">
+        <div class="lb-tab active" onclick="loadLeaderboard('exp')"><i class="fas fa-star"></i> Top Rank</div>
+        <div class="lb-tab" onclick="loadLeaderboard('totalKills')"><i class="fas fa-crosshairs"></i> Top Kills</div>
+        <div class="lb-tab" onclick="loadLeaderboard('totalWins')"><i class="fas fa-trophy"></i> Top Wins</div>
+    </div>
+
+    <div class="search-box" style="position:relative; margin-bottom: 20px;">
+        <i class="fas fa-search" style="position:absolute; left:15px; top:14px; color:var(--gray); font-size:14px;"></i>
+        <input type="text" id="searchLeaderboard" placeholder="Search player by name..." style="width: 100%; padding: 12px 15px 12px 40px; border-radius: 14px; border: 1px solid #e5e7eb; font-size:14px; outline:none; background: var(--card-light); color: var(--text-light); box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+    </div>
+
+    <div id="leaderboardContent" style="padding-bottom: 90px;"></div>
+
+    <div class="lb-sticky-footer" id="myRankFooter">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div class="my-rank-badge" id="myRankDisplay" style="font-size: 16px; padding: 6px 14px;">#--</div>
+            <div>
+                <div style="font-weight:800; font-size:12px; color:var(--gray); text-transform: uppercase;">Your Position</div>
+                <div style="font-size:16px; font-weight:900; color:white;" id="myRankScore">0 EXP</div>
+            </div>
+        </div>
+        <button onclick="shareMyRank()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 13px; display: flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); transition: 0.2s;">
+            <i class="fas fa-share-alt"></i> Share
+        </button>
+    </div>
+</div>
+
+
+
+    <div class="section" id="luckydraw-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:none; border:none; color:var(--text-light); font-size:20px; margin-right:15px; cursor:pointer;">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h2 style="font-size:20px; font-weight:600;">
+            <i class="fas fa-gift" style="color: #ec4899; margin-right: 8px;"></i> Lucky Draw
+        </h2>
+    </div>
+    
+        <div class="history-tabs" style="margin-bottom: 15px;">
+        <div class="history-tab active" id="ldTab_active" onclick="switchLdTab('active')">Active</div>
+        <div class="history-tab" id="ldTab_mytickets" onclick="switchLdTab('mytickets')">My Tickets</div>
+        <div class="history-tab" id="ldTab_history" onclick="switchLdTab('history')">History</div>
+    </div>
+
+    <div id="ldUserContent" style="text-align: center; padding: 10px 0;">
+        <i class="fas fa-spinner fa-spin" style="font-size: 30px; color: var(--primary);"></i>
+        <p style="margin-top: 10px;">Loading Draw Details...</p>
+    </div>
+    
+    <div id="ldMyTicketsContent" style="display: none; max-height: calc(100vh - 150px); overflow-y: auto; padding-right: 5px;"></div>
+    
+    
+    <div id="ldHistoryContent" style="display: none; max-height: calc(100vh - 150px); overflow-y: auto; padding-right: 5px;">
+        </div>
+</div>
+
+    <div class="modal-overlay" id="redeemModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Redeem Code</h3>
+            <button class="close-modal" id="closeRedeemModal">×</button>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div class="form-group">
+                <label class="form-label">Enter Promo Code</label>
+                <input type="text" class="form-input" id="promoCodeInput" placeholder="Ex: PROMO2026">
+            </div>
+            <button class="join-btn" id="applyRedeemBtn" style="width: 100%;">Apply Code</button>
+        </div>
+
+        <div style="border-top: 1px solid #e5e7eb; padding-top: 15px;">
+            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--gray);">Redemption History</h4>
+            <div id="redeemHistoryList" style="max-height: 200px; overflow-y: auto;">
+                </div>
+        </div>
+    </div>
+</div>
+
+
+    <div class="modal-overlay" id="ldWinnersModal" style="z-index: 100000;">
+
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-trophy" style="color: #fbbf24; margin-right: 8px;"></i> Hall of Fame</h3>
+            <button class="close-modal" onclick="document.getElementById('ldWinnersModal').classList.remove('active')">×</button>
+        </div>
+        <div id="ldWinnersListContent" style="max-height: 400px; overflow-y: auto; padding-right: 5px;">
+            </div>
+    </div>
+</div>
+
+    
+    
+    <div class="modal-overlay" id="referModal">
+    <div class="modal" style="padding: 20px;">
+        <div class="modal-header" style="margin-bottom: 10px;">
+            <h3 class="modal-title">
+                <i class="fas fa-handshake" style="color: var(--primary); margin-right: 8px;"></i> Refer & Earn
+            </h3>
+            <button class="close-modal" id="closeReferModal">×</button>
+        </div>
+        
+        <div class="refer-modal-content">
+            <div class="ref-hero">
+                <i class="fas fa-gift"></i>
+                <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 5px;">Invite Friends, Earn Cash!</h3>
+                <p style="font-size: 12px; color: var(--gray);">Get rewarded instantly when your friends join via your link.</p>
+            </div>
+
+            <div class="ref-stats-grid">
+                <div class="ref-stat-card">
+                    <div class="ref-stat-val" id="advRefTotal">0</div>
+                    <div class="ref-stat-label">Total Friends</div>
+                </div>
+                <div class="ref-stat-card">
+                    <div class="ref-stat-val earnings">৳<span id="advRefEarned">0</span></div>
+                    <div class="ref-stat-label">Total Earned</div>
+                </div>
+            </div>
+
+            <div class="ref-milestone-box">
+                <div class="ref-milestone-header">
+                    <span><i class="fas fa-star" style="margin-right: 5px;"></i> Next Milestone</span>
+                    <span id="refMilestoneText">0 / 5</span>
+                </div>
+                <div class="ref-progress-bg">
+                    <div class="ref-progress-fill" id="refProgressBar" style="width: 0%;"></div>
+                </div>
+                <div style="font-size: 10px; color: #b45309; margin-top: 8px; text-align: center; font-weight: 600;">
+                    Invite more friends to unlock special bonuses!
+                </div>
+            </div>
+
+            <div class="ref-link-area">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-light); margin-bottom: 8px; text-transform: uppercase;">Your Unique Link</div>
+                <div class="ref-link-display" id="referLinkText">https://t.me/Bot?start=123</div>
+                <div class="ref-btn-group">
+                    <button class="ref-btn ref-btn-copy" id="copyReferBtnAdvanced" data-text="">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                    <button class="ref-btn ref-btn-share" id="shareReferBtnAdvanced">
+                        <i class="fas fa-share-alt"></i> Share
+                    </button>
+                </div>
+            </div>
+
+            <h4 style="font-size: 14px; font-weight: 800; margin-bottom: 10px; color: var(--gray);">Recent Referrals</h4>
+            <div class="ref-history-container" id="recentReferralsList">
+                <div style="text-align: center; padding: 20px; color: var(--gray); font-size: 12px;">Loading...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div class="modal-overlay" id="infoModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="infoModalTitle">Information</h3>
+                <button class="close-modal" id="closeInfoModal">×</button>
+            </div>
+            <div id="infoModalContent" style="line-height: 1.6; font-size: 14px;">
+                </div>
+        </div>
+    </div>
+
+    <div id="daily-task-section" class="task-page-wrapper" style="display: none;">
+    <div class="task-hero">
+        <div class="task-hero-bg"></div>
+        <div class="task-hero-content">
+            <button class="back-btn" onclick="closeDailyTask()"><i class="fas fa-arrow-left"></i></button>
+            <h2>Daily Missions</h2>
+            <div class="coin-balance">
+                <i class="fas fa-coins"></i> <span id="taskCoinBalance">1,250</span>
+            </div>
+        </div>
+        
+        <div class="streak-box">
+            <div class="streak-header">
+                <span><i class="fas fa-fire"></i> Weekly Streak</span>
+                <span>Day 3/7</span>
+            </div>
+            <div class="streak-progress-wrap">
+                <div class="streak-progress-fill" style="width: 42%;"></div>
+            </div>
+            <div class="streak-days">
+                <div class="day active"><i class="fas fa-check"></i></div>
+                <div class="day active"><i class="fas fa-check"></i></div>
+                <div class="day current">3</div>
+                <div class="day">4</div>
+                <div class="day">5</div>
+                <div class="day">6</div>
+                <div class="day gift"><i class="fas fa-gift"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="task-tabs">
+        <button class="task-tab active" data-filter="all">All Tasks</button>
+        <button class="task-tab" data-filter="pending">Pending</button>
+        <button class="task-tab" data-filter="completed">Completed</button>
+    </div>
+
+    <div class="task-list-container">
+        <div class="modern-task-card" data-status="pending">
+            <div class="task-icon bg-blue">
+                <i class="fas fa-gamepad"></i>
+            </div>
+            <div class="task-details">
+                <h4>Play 3 Matches</h4>
+                <p>Complete 3 matches in any mode.</p>
+                <div class="task-progress">
+                    <div class="tp-bar"><div class="tp-fill" style="width: 66%;"></div></div>
+                    <span class="tp-text">2/3</span>
+                </div>
+            </div>
+            <div class="task-action">
+                <div class="task-reward">+50 <i class="fas fa-coins"></i></div>
+                <button class="task-btn-modern go-btn">Go</button>
+            </div>
+        </div>
+
+        <div class="modern-task-card ready" data-status="pending">
+            <div class="task-icon bg-purple">
+                <i class="fas fa-user-friends"></i>
+            </div>
+            <div class="task-details">
+                <h4>Invite a Friend</h4>
+                <p>Share your referral link with a friend.</p>
+                <div class="task-progress">
+                    <div class="tp-bar"><div class="tp-fill" style="width: 100%;"></div></div>
+                    <span class="tp-text">1/1</span>
+                </div>
+            </div>
+            <div class="task-action">
+                <div class="task-reward">+100 <i class="fas fa-coins"></i></div>
+                <button class="task-btn-modern claim-btn" onclick="claimTask(this)">Claim</button>
+            </div>
+        </div>
+
+        <div class="modern-task-card completed" data-status="completed">
+            <div class="task-icon bg-green">
+                <i class="fas fa-sign-in-alt"></i>
+            </div>
+            <div class="task-details">
+                <h4>Daily Login</h4>
+                <p>Login to the app today.</p>
+            </div>
+            <div class="task-action">
+                <button class="task-btn-modern done-btn" disabled><i class="fas fa-check"></i> Done</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    <div class="section" id="history-section">
+    <div class="history-wrapper">
+        <div style="display:flex; align-items:center; margin-bottom:25px; padding-top: 10px;">
+            <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e5e7eb; color:var(--text-light); font-size:16px; width:42px; height:42px; border-radius:14px; margin-right:15px; cursor:pointer; transition: 0.2s; box-shadow:0 4px 10px rgba(0,0,0,0.03);">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 style="font-size:24px; font-weight:900; margin:0; letter-spacing:-0.5px; color:var(--text-light);">
+                Transaction <span style="color:var(--primary);">History</span>
+            </h2>
+        </div>
+
+        <div class="premium-history-tabs">
+            <div class="p-hist-tab active" onclick="switchHistoryTab('deposit')"><i class="fas fa-arrow-down"></i> Deposit</div>
+            <div class="p-hist-tab" onclick="switchHistoryTab('match_entry')"><i class="fas fa-gamepad"></i> Entry</div>
+            <div class="p-hist-tab" onclick="switchHistoryTab('withdraw')"><i class="fas fa-arrow-up"></i> Withdraw</div>
+        </div>
+
+        <div class="history-summary-box">
+            <div class="history-summary-text"><i class="fas fa-chart-line" style="margin-right:5px; opacity:0.7;"></i> Total Records</div>
+            <div class="history-summary-val" id="txnTotalCount">0</div>
+        </div>
+
+        <div id="historyListContent" class="history-scroll-container">
+
+            </div>
+    </div>
+</div>
+
+
+    <div class="modal-overlay" id="esportsJoinModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Squad Registration</h3>
+                <button class="close-modal" id="closeEsportsJoinModal">×</button>
+            </div>
+            
+            <div class="join-rules">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>4 Players required per squad.</span>
+            </div>
+            
+            <form id="esportsJoinForm">
+                <input type="hidden" id="esportsSelectedMatchId">
+                
+                <div class="form-group">
+                    <label class="form-label">Squad Name</label>
+                    <input type="text" class="form-input" id="esportsSquadName" placeholder="Enter Team Name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Player 1 (Leader/You)</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Player 2</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Player 3</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Player 4</label>
+                    <div style="display:flex; gap:5px;">
+                        <input type="text" class="form-input es-player-name" placeholder="Name" required>
+                        <input type="text" class="form-input es-player-ign" placeholder="UID/IGN" required>
+                    </div>
+                </div>
+                
+                <button type="submit" class="join-btn" style="width: 100%;">Register Squad</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="esportsMatchPointsModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Match Standings</h3>
+                <button class="close-modal" id="closeEsportsMatchPointsModal">×</button>
+            </div>
+            <div id="esportsMatchPointsContent">
+                </div>
+        </div>
+    </div>
+    
+    
+    <div class="modal-overlay" id="adsModal">
+    <div class="modal" style="text-align: center;">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="fas fa-coins" style="color: var(--warning);"></i> Earn Free Coins</h3>
+            <button class="close-modal" id="closeAdsModal">×</button>
+        </div>
+        
+        <i class="fas fa-gift" style="font-size: 60px; color: var(--primary); margin: 20px 0;"></i>
+        <h4 style="margin-bottom: 10px;">Watch an Ad to get Coins!</h4>
+        <p style="color: var(--gray); font-size: 13px; margin-bottom: 25px;">
+            Click the button below, wait for the ad to finish, and return to claim <span id="adRewardDisplay" style="font-weight: bold; color: var(--warning);">0</span> Coins.
+        </p>
+
+        <button class="join-btn" id="startAdBtn" style="width: 100%; font-size: 16px; padding: 15px; background: linear-gradient(135deg, #f59e0b, #ea580c);">
+            <i class="fas fa-play"></i> Watch Ad Now
+        </button>
+
+        <div id="adTimerSection" style="display: none; margin-top: 15px;">
+            <div style="font-size: 24px; font-weight: bold; color: var(--primary);" id="adCountdown">15</div>
+            <p style="font-size: 12px; color: var(--gray);">Please wait...</p>
+        </div>
+    </div>
+</div>
+
+    <div class="modal-overlay" id="rulesModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 class="modal-title">
+                <i class="fas fa-book" style="color: var(--primary); margin-right: 8px;"></i>
+                Tournament Rules
+            </h3>
+            <button class="close-modal" id="closeRulesModal">×</button>
+        </div>
+
+        <div class="rules-tabs-container" id="rulesTabsHeader">
+            </div>
+
+        <div id="rulesContentBody" class="rules-content-area">
+            <div class="no-rule-selected">
+                <i class="fas fa-hand-pointer" style="font-size: 24px; margin-bottom: 10px; opacity: 0.5;"></i>
+                <p>Select a rule from the top to read.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="section" id="deposit-section">
+    <div style="display:flex; align-items:center; margin-bottom:25px; padding-top: 10px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e5e7eb; color:var(--text-light); font-size:16px; width:42px; height:42px; border-radius:14px; margin-right:15px; cursor:pointer; transition: 0.3s; box-shadow:0 4px 10px rgba(0,0,0,0.03);">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <h2 style="font-size:24px; font-weight:900; margin:0; letter-spacing:-0.5px; color:var(--text-light);">
+            Fund <span style="color:var(--primary);">Wallet</span>
+        </h2>
+    </div>
+
+    <div class="cyber-tracker">
+        <div class="cyber-line"><div class="cyber-line-fill" id="stepLineFill"></div></div>
+        
+        <div class="cyber-step active" id="step1Dot">
+            <div class="cyber-step-icon"><i class="fas fa-wallet"></i></div>
+            <div class="cyber-step-text">Method</div>
+        </div>
+        
+        <div class="cyber-step" id="step2Dot">
+            <div class="cyber-step-icon"><i class="fas fa-paper-plane"></i></div>
+            <div class="cyber-step-text">Payment</div>
+        </div>
+        
+        <div class="cyber-step" id="step3Dot">
+            <div class="cyber-step-icon"><i class="fas fa-shield-check"></i></div>
+            <div class="cyber-step-text">Verify</div>
+        </div>
+    </div>
+
+    <div id="depositStep1" style="animation: fadeSlideUp 0.4s ease-out forwards;">
+        <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 14px; font-weight: 800; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px;">Select Gateway</h3>
+            <span style="font-size: 10px; background: rgba(16,185,129,0.1); color: #10b981; padding: 4px 8px; border-radius: 8px; font-weight: 800;"><i class="fas fa-bolt"></i> INSTANT</span>
+        </div>
+        
+        <div class="payment-grid-elite" id="paymentMethodsList">
+            <div style="grid-column: 1/-1; text-align:center; padding:40px; color: var(--gray);">
+                <i class="fas fa-circle-notch fa-spin" style="font-size: 30px; color: var(--primary);"></i>
+            </div>
+        </div>
+    </div>
+
+    <div id="depositStep2" style="display:none; animation: fadeSlideUp 0.4s ease-out forwards;">
+        
+        <div class="glass-receiver-card" id="paymentDetailsBox">
+            <div class="laser-scanner"></div>
+            <div class="fake-chip"></div>
+            
+            <div class="grc-header">
+                <i class="fas fa-circle"></i> <span>Send <span id="pmTypeDisplay">Personal</span> Money To</span>
+            </div>
+            
+            <div class="grc-number-display">
+                <span id="targetNumber">01xxxxxxxxx</span>
+                <button class="grc-copy-btn" id="copyNumberBtn" data-text="">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </div>
+            
+            <div class="grc-footer">
+                <div class="grc-footer-item">
+                    <span class="grc-label">Minimum</span>
+                    <span class="grc-value">৳<span id="minDepDisplay">0</span></span>
+                </div>
+                <div class="grc-footer-item" style="text-align: right;">
+                    <span class="grc-label">Network</span>
+                    <span class="grc-value" style="color: #fff; font-size: 14px; margin-top: 2px;" id="networkNameDisplay">BKASH</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="font-size: 14px; font-weight: 800; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px;">Verify Transaction</h3>
+            <button onclick="resetDepositPage()" style="background: transparent; border: none; color: var(--primary); font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                <i class="fas fa-edit"></i> Change
+            </button>
+        </div>
+
+        <form id="depositFormPage">
+            <input type="hidden" id="selectedMethodNamePage">
+            
+            <div class="floating-input-group">
+                <input type="number" class="floating-input" id="depositAmountPage" required>
+                <label class="floating-label"><i class="fas fa-coins" style="margin-right:5px;"></i>Amount Sent (৳)</label>
+            </div>
+            
+            <div class="floating-input-group">
+                <input type="text" class="floating-input" id="depositTrxIDPage" required>
+                <label class="floating-label"><i class="fas fa-fingerprint" style="margin-right:5px;"></i>Transaction ID (TrxID)</label>
+            </div>
+
+            <button type="submit" class="neon-submit-btn">
+                <i class="fas fa-rocket"></i> Confirm Deposit
+            </button>
+        </form>
+    </div>
+</div>
+
+
+
+<div class="section" id="withdraw-section">
+    <div style="display:flex; align-items:center; margin-bottom:20px; padding-top: 10px;">
+        <button class="theme-toggle" onclick="switchSection('profile')" style="background:var(--card-light); border:1px solid #e2e8f0; color:var(--text-light); font-size:16px; width:40px; height:40px; border-radius:12px; margin-right:15px; cursor:pointer;">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <h2 style="font-size:22px; font-weight:800; margin:0; color:var(--text-light);">Cashout</h2>
+    </div>
+
+    <div class="fintech-wallet-card">
+        <div class="fwc-label">Available for Withdraw</div>
+        <div class="fwc-balance">
+            <span>৳</span><div id="cardWinningBalance">0.00</div>
+        </div>
+        <div class="fwc-footer">
+            <div style="font-size: 12px; font-weight: 800; color: #4ade80;"><i class="fas fa-check-circle"></i> Ready</div>
+            <div style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.6);"><i class="fas fa-shield-alt"></i> Secure</div>
+        </div>
+    </div>
+
+    <div style="font-size: 14px; font-weight: 800; color: var(--text-light); margin-bottom: 12px;">Select Gateway</div>
+    <div class="method-grid-clean" id="withdrawMethodsGrid">
+        </div>
+
+   <div id="withdrawInputArea" style="display:none; animation: fadeIn 0.3s ease-out;">
+    <div style="font-size: 14px; font-weight: 800; margin-bottom: 12px; margin-top: 10px;">Withdraw Details</div>
+
+    <form id="withdrawFormPage">
+        <input type="hidden" id="selectedWithMethodName">
+        
+        <div class="clean-input-wrapper">
+            <i class="fas fa-phone-alt clean-input-icon"></i>
+            <input type="number" class="clean-input" id="withdrawNumberPage" placeholder="Account Number" required>
+        </div>
+
+        <div class="clean-input-wrapper">
+            <i class="fas fa-coins clean-input-icon"></i>
+            <input type="number" class="clean-input" id="withdrawAmountPage" placeholder="Amount (৳)" required>
+        </div>
+
+        <div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; border-radius: 8px; padding: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-info-circle" style="color: #f59e0b; font-size: 18px;"></i>
+            <div style="font-size: 12px; font-weight: 700;">
+                Minimum withdraw limit: <span style="color: #f59e0b; font-weight: 900;">৳<span id="minWithDisplay">0</span></span>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-fintech">
+            Withdraw Now <i class="fas fa-arrow-right" style="font-size: 14px;"></i>
+        </button>
+    </form>
+</div>
+
+</div>
+
+
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCq_uq5vFAYxgbJHFZ7EEuR14MECBmjzGY",
+            authDomain: "fir-d1a84.firebaseapp.com",
+            databaseURL: "https://fir-d1a84-default-rtdb.firebaseio.com",
+            projectId: "fir-d1a84",
+            storageBucket: "fir-d1a84.firebasestorage.app",
+            messagingSenderId: "521723000669",
+            appId: "1:521723000669:web:aaa54efcee17b90841dab4",
+            measurementId: "G-63V90Y91GG"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+    </script>
+
+    <style>
+    /* --- 1. RGB বর্ডার অ্যানিমেশন --- */
+    @keyframes rgbFlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
-}
 
+    /* --- 2. টেবিল স্ট্রাকচার --- */
+    .points-table {
+        border-collapse: separate; 
+        border-spacing: 0 4px; 
+        width: 100%;
+    }
 
-        function switchCategory(categoryId) {
-            categories.forEach(category => {
-                category.classList.toggle('active', category.getAttribute('data-category') === categoryId);
-            });
-            
-            appState.currentCategory = categoryId;
-            filterMatchesByCategory();
-        }
+    .stream-card {
+        position: relative;
+    }
 
-        function toggleTheme() {
-            if (appState.darkMode) {
-                disableDarkMode();
-            } else {
-                enableDarkMode();
-            }
-        }
-
-        function enableDarkMode() {
-            document.body.classList.add('dark-mode');
-            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
-            appState.darkMode = true;
-            localStorage.setItem('theme', 'dark');
-        }
-
-        function disableDarkMode() {
-            document.body.classList.remove('dark-mode');
-            themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
-            appState.darkMode = false;
-            localStorage.setItem('theme', 'light');
-        }
-
-        function loadNotice() {
-    database.ref('announcement/message').on('value', (snapshot) => {
-        const notice = snapshot.val() || "Welcome to Battle Royale Tournament! Check out our new matches.";
-        // textContent এর বদলে innerHTML ব্যবহার করুন
-        noticeText.innerHTML = notice; 
-    });
-}
-
-
-
-        function loadMatches() {
-    database.ref('matches').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            appState.matches = Object.keys(data).map(key => ({
-                id: key,
-                ...data[key]
-            }));
-            appState.matches.sort((a, b) => a.startTime - b.startTime);
-        } else {
-            appState.matches = [];
-        }
+    /* --- COLOR FIX HERE (সবচেয়ে গুরুত্বপূর্ণ পরিবর্তন) --- */
+    .stream-card td {
+        border: none !important;
+        padding: 12px 10px !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        vertical-align: middle;
+        position: relative;
+        z-index: 2;
         
-        // --- নতুন যোগ করা লাইন ---
-        renderCategoryGrid(); 
-        // -------------------------
+        /* ডিফল্ট (লাইট মোড) - লেখা কালো হবে */
+        color: #000 !important; 
+        background: rgba(0,0,0,0.02); /* খুব হালকা ব্যাকগ্রাউন্ড */
+    }
 
-        renderMatches();
-        startMatchTimers();
-    });
-}
+    /* ডার্ক মোড - লেখা সাদা হবে */
+    body.dark-mode .stream-card td {
+        color: #fff !important;
+        background: rgba(255,255,255,0.05); /* হালকা সাদা ভাব */
+    }
+    /* ---------------------------------------------------- */
 
-        // loadMatches ফাংশনের ঠিক নিচে এটি পেস্ট করুন
-function fetchUserJoinedMatches() {
-    if (!appState.userId) return;
+    .stream-card td:first-child { border-radius: 4px 0 0 4px; }
+    .stream-card td:last-child { border-radius: 0 4px 4px 0; }
 
-    database.ref('users/' + appState.userId + '/myMatches').on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-            appState.myMatches = Object.values(data);
-        } else {
-            appState.myMatches = [];
-        }
+    /* --- 3. র‍্যাংক স্পেসিফিক ডিজাইন --- */
+
+    /* 🌈 RANK 1: RGB STREAM */
+    .rank-1 td {
+        /* লাইট মোডে ব্যাকগ্রাউন্ড */
+        background: linear-gradient(90deg, rgba(255,0,222,0.1), rgba(0,234,255,0.1)) !important;
+        box-shadow: inset 0 -3px 0 0 #ff00de; 
+    }
+    
+    /* ডার্ক মোডে Rank 1 এর ব্যাকগ্রাউন্ড একটু গাঢ় হবে */
+    body.dark-mode .rank-1 td {
+        background: linear-gradient(90deg, rgba(255,0,0,0.2), rgba(0,0,255,0.2)) !important;
+    }
+
+    .rank-1::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; width: 100%; height: 3px;
+        background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+        background-size: 400%;
+        animation: rgbFlow 3s linear infinite;
+        border-radius: 4px;
+        z-index: 5;
+    }
+
+    .rank-1 .rank-badge {
+        background: linear-gradient(135deg, #ff00de, #00eaff);
+        color: #fff; /* ব্যাজের লেখা সব সময় সাদা */
+        box-shadow: 0 0 5px rgba(255, 0, 222, 0.4);
+    }
+
+    /* ⚡ RANK 2: ELECTRIC STREAM */
+    .rank-2 td {
+        background: rgba(0, 234, 255, 0.05) !important;
+        box-shadow: inset 0 -3px 0 0 #00eaff;
+    }
+    
+    body.dark-mode .rank-2 td {
+        background: rgba(0, 234, 255, 0.1) !important;
+    }
+
+    .rank-2::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; width: 100%; height: 3px;
+        background: linear-gradient(90deg, #00eaff, #0078ff, #00eaff);
+        background-size: 200%;
+        animation: rgbFlow 2s linear infinite;
+        border-radius: 4px;
+        z-index: 5;
+    }
+
+    .rank-2 .rank-badge {
+        background: #00eaff;
+        color: #000; /* ব্যাজের লেখা কালো */
+        box-shadow: 0 0 5px rgba(0, 234, 255, 0.4);
+    }
+
+    /* 🔥 RANK 3: FIRE STREAM */
+    .rank-3 td {
+        background: rgba(255, 69, 0, 0.05) !important;
+        box-shadow: inset 0 -3px 0 0 #ff4500;
+    }
+
+    body.dark-mode .rank-3 td {
+        background: rgba(255, 69, 0, 0.1) !important;
+    }
+
+    .rank-3::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; width: 100%; height: 3px;
+        background: linear-gradient(90deg, #ff4500, #ffae00, #ff4500);
+        background-size: 200%;
+        animation: rgbFlow 2.5s linear infinite;
+        border-radius: 4px;
+        z-index: 5;
+    }
+
+    .rank-3 .rank-badge {
+        background: #ff4500;
+        color: #fff;
+        box-shadow: 0 0 5px rgba(255, 69, 0, 0.4);
+    }
+
+    /* র‍্যাংক ব্যাজ */
+    .rank-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 4px;
+        font-weight: 900;
+        font-size: 14px;
+        transform: skew(-5deg);
+    }
+
+</style>
+<script src="user.js"></script>
+<script>
+    // --- FIXED NEON RGB LOGIC ---
+    function openSpecificPointsModal(matchId) {
+        const modalContent = document.getElementById('esportsMatchPointsContent');
+        modalContent.innerHTML = '<div style="text-align:center; padding:20px;">Loading stats...</div>';
         
-        renderMatches(); 
-        if (appState.currentSection === 'my-matches') {
-            loadMyMatches(); 
-        }
-    });
-}
+        const pointsModal = document.getElementById('esportsMatchPointsModal');
+        pointsModal.classList.add('active');
 
-
-
-        function renderMatches() {
-            const filteredMatches = filterMatches();
+        database.ref('esports/registrations/' + matchId).once('value').then(snapshot => {
+            const registrations = snapshot.val() || {};
             
-            if (filteredMatches.length === 0) {
-                matchesContainer.innerHTML = noMatches.outerHTML;
+            if(Object.keys(registrations).length === 0) {
+                modalContent.innerHTML = '<div class="no-data"><p>No data found.</p></div>';
                 return;
             }
-            
-            matchesContainer.innerHTML = '';
-            
-            filteredMatches.forEach(match => {
-                const matchCard = createMatchCard(match);
-                matchesContainer.appendChild(matchCard);
-            });
-        }
 
-        function filterMatches() {
-    
-    let activeMatches = appState.matches.filter(match => match.status !== 'ended');
+            const teams = Object.values(registrations).map(reg => {
+                const stats = reg.stats || { matches: 0, wins: 0, kills: 0, total: 0 };
+                return {
+                    name: reg.squadName || 'Unknown',
+                    matches: stats.matches || 0,
+                    wins: stats.wins || 0,
+                    kills: stats.kills || 0,
+                    points: stats.total || 0
+                };
+            }).sort((a, b) => b.points - a.points);
 
-    if (appState.currentCategory === 'all') {
-        return activeMatches;
-    }
-    return activeMatches.filter(match => match.category === appState.currentCategory);
-}
-
-
-        function createMatchCard(match) {
-    const card = document.createElement('div');
-    card.className = 'match-card-ultra';
-    card.setAttribute('data-match-id', match.id);
-
-    // Date & Time Logic
-    const matchDate = new Date(match.startTime);
-    const dateStr = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); 
-    const timeStr = matchDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true }); 
-    const timeLeft = match.startTime - Date.now();
-    const countdownText = formatTimeLeft(timeLeft);
-
-    // Slots Logic
-    const isJoined = appState.myMatches && appState.myMatches.some(m => m.matchId === match.id);
-    const totalSlots = match.slots.total;
-    const availableSlots = Math.max(0, match.slots.available);
-    const joinedCount = totalSlots - availableSlots;
-    const progressPercent = totalSlots > 0 ? (joinedCount / totalSlots) * 100 : 0;
-
-    // Status Badge & Timer
-    let statusClass = 'upcoming';
-    let statusText = 'UPCOMING';
-    let timerDisplay = `Starts in <br> <span class="countdown" data-end-time="${match.startTime}" style="color:var(--primary); font-size:12px;">${countdownText}</span>`;
-
-    if (match.status === 'playing') {
-        statusClass = 'live';
-        statusText = '<i class="fas fa-satellite-dish"></i> LIVE';
-        timerDisplay = 'Match is running';
-        card.classList.add('live-animation');
-    } else if (match.status === 'ended') {
-        statusClass = 'ended';
-        statusText = 'ENDED';
-        timerDisplay = 'Match finished';
-    }
-
-    // Button Logic
-    let btnClass = 'mcu-join-btn';
-    let btnText = 'JOIN NOW';
-    let btnDisabled = false;
-
-    if (match.status !== 'playing' && match.status !== 'ended') {
-        if (isJoined) {
-            btnText = '<i class="fas fa-check"></i> JOINED';
-            btnClass += ' joined';
-            btnDisabled = true;
-        } else if (availableSlots <= 0) {
-            btnText = 'SLOTS FULL';
-            btnClass += ' full';
-            btnDisabled = true;
-        }
-    } else {
-        btnText = 'CLOSED';
-        btnClass += ' full';
-        btnDisabled = true;
-    }
-
-    // Secret Room UI (If Joined)
-    let roomHtml = '';
-    if (isJoined && match.roomId && match.roomPassword) {
-        roomHtml = `
-            <div class="mcu-secret-box">
-                <div class="mcp-sr-item">
-                    <div class="mcp-sr-label">Room ID</div>
-                    <div class="mcp-sr-val">
-                        ${match.roomId} 
-                        <i class="fas fa-copy copy-btn" data-text="${match.roomId}" style="color:var(--gray); cursor:pointer;"></i>
-                    </div>
-                </div>
-                <div style="width:1px; background:rgba(16,185,129,0.3);"></div>
-                <div class="mcp-sr-item">
-                    <div class="mcp-sr-label">Password</div>
-                    <div class="mcp-sr-val">
-                        ${match.roomPassword} 
-                        <i class="fas fa-copy copy-btn" data-text="${match.roomPassword}" style="color:var(--gray); cursor:pointer;"></i>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Assemble Ultra Structured Card
-    card.innerHTML = `
-        <div class="mcu-header">
-            <div class="mcu-badge-row">
-                <div class="mcu-type"><i class="fas fa-gamepad"></i> ${match.type} • #${match.id}</div>
-                <div class="mcu-status ${statusClass}">${statusText}</div>
-            </div>
-            <div class="mcu-title-row">
-                <div class="mcu-title">${match.title}</div>
-                <div class="mcu-time"><i class="far fa-calendar-alt"></i> ${dateStr}<br>${timeStr}</div>
-            </div>
-        </div>
-
-        <div class="mcu-stats-box">
-            <div class="mcu-stat">
-                <span>Prize Pool</span>
-                <strong class="prize-color">৳${match.prizePool}</strong>
-            </div>
-            <div class="mcu-stat">
-                <span>Per Kill</span>
-                <strong>৳${match.perKill}</strong>
-            </div>
-            <div class="mcu-stat">
-                <span>Entry</span>
-                <strong>${match.entryFee === 0 ? 'FREE' : '৳'+match.entryFee}</strong>
-            </div>
-        </div>
-
-        ${roomHtml}
-
-        <div class="mcu-footer">
-            <div class="mcu-progress-row">
-                <div class="mcu-prog-text"><i class="fas fa-users" style="color:var(--primary);"></i> ${joinedCount} / ${totalSlots}</div>
-                <div class="mcu-prog-bar-bg">
-                    <div class="mcu-prog-fill" style="width: ${progressPercent}%;"></div>
-                </div>
-                ${match.status === 'upcoming' ? `<div style="font-size:11px; font-weight:700; color:var(--gray); text-align:right;">${timerDisplay}</div>` : ''}
-            </div>
-            
-            <div class="mcu-action-row">
-                <div class="mcu-icon-group">
-                    <button class="mcu-icon-btn view-prize" title="Prizes"><i class="fas fa-gift"></i></button>
-                    <button class="mcu-icon-btn view-part" title="Participants"><i class="fas fa-list-ul"></i></button>
-                    <button class="mcu-icon-btn view-rules" title="Rules"><i class="fas fa-info-circle"></i></button>
-                </div>
-                <button class="${btnClass}" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
-            </div>
-        </div>
-    `;
-
-    // Bind Event Listeners
-    const joinBtn = card.querySelector('.mcu-join-btn:not([disabled])');
-    if (joinBtn) joinBtn.addEventListener('click', () => openJoinModal(match));
-    
-    card.querySelector('.view-prize').addEventListener('click', () => openPrizePoolModal(match));
-    card.querySelector('.view-part').addEventListener('click', () => openParticipantsModal(match));
-    card.querySelector('.view-rules').addEventListener('click', () => document.getElementById('rulesBtn').click());
-
-    return card;
-}
-
-
-
-
-        function openParticipantsModal(match) {
-    participantsListContent.innerHTML = ''; 
-    
-    const players = match.participants || [];
-    
-    if (players.length === 0) {
-        participantsListContent.innerHTML = `
-            <div class="no-data" style="padding: 20px;">
-                <i class="fas fa-users" style="font-size:32px;"></i>
-                <p>No participants yet</p>
-            </div>`;
-    } else {
-        players.forEach((player, index) => {
-            // এই লাইনটি সমস্যা সমাধান করবে
-            // এটি চেক করবে player কি সরাসরি নাম নাকি একটি অবজেক্ট
-            let displayName = player;
-            
-            if (typeof player === 'object' && player !== null) {
-                displayName = player.playerName || 'Unknown';
-            }
-
-            const item = document.createElement('div');
-            item.className = 'participant-item';
-            item.innerHTML = `
-                <div class="participant-serial">${index + 1}</div>
-                <div class="participant-name">${displayName}</div>
+            let tableHTML = `
+                <div class="points-table-container" style="background:transparent; border:none; box-shadow:none;">
+                    <table class="points-table">
+                        <thead>
+                            <tr style="font-size:12px; opacity:0.7;">
+                                <th style="padding:5px;">#</th>
+                                <th>Team</th>
+                                <th>M</th> <th>W</th> <th>K</th>
+                                <th>Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             `;
-            participantsListContent.appendChild(item);
-        });
-    }
-    
-    participantsModal.classList.add('active');
-}
 
+            teams.forEach((team, index) => {
+                const rank = index + 1;
+                let rowClass = '';
+                let badgeHTML = rank;
 
-        function openPrizePoolModal(match) {
-    prizePoolContent.innerHTML = '';
-    
-    const distribution = match.prizeDistribution || [];
-    
-    if (distribution.length === 0) {
-        prizePoolContent.innerHTML = `
-            <div class="no-data" style="padding: 20px;">
-                <i class="fas fa-gift" style="font-size:32px;"></i>
-                <p>No breakdown available</p>
-            </div>`;
-    } else {
-        let tableHTML = `
-            <table class="prize-table" style="width:100%;">
-                <thead>
-                    <tr>
-                        <th style="text-align:left; padding:10px;">Rank</th>
-                        <th style="text-align:right; padding:10px;">Reward</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        distribution.forEach(item => {
-            tableHTML += `
-                <tr>
-                    <td class="prize-rank" style="text-align:left; padding:10px;">${item.rank}</td>
-                    <td class="prize-amount" style="text-align:right; padding:10px; color:var(--success); font-weight:bold;">৳${item.reward}</td>
-                </tr>
-            `;
-        });
-        
-        tableHTML += `</tbody></table>`;
-        prizePoolContent.innerHTML = tableHTML;
-    }
-    
-    prizePoolModal.classList.add('active');
-}
-
-        
-        function filterMatchesByCategory() {
-            renderMatches();
-        }
-
-                
-
-        
-        function startMatchTimers() {
-    setInterval(() => {
-        const countdowns = document.querySelectorAll('.countdown');
-        
-        countdowns.forEach(countdown => {
-            const endTime = parseInt(countdown.getAttribute('data-end-time'));
-            if (isNaN(endTime)) return;
-
-            const timeLeft = endTime - Date.now();
-            
-            if (timeLeft > 0) {
-                countdown.textContent = formatTimeLeft(timeLeft);
-            } else {
-                if(countdown.textContent === 'LIVE') return;
-
-                countdown.textContent = '00:00:00';
-                
-                // স্ট্যাটাস আপডেট ভিজ্যুয়াল
-                const matchCard = countdown.closest('.match-card');
-                
-                if (matchCard) {
-                    // ১. ৩ডি অ্যানিমেশন ক্লাস যোগ করুন
-                    matchCard.classList.add('live-animation');
-
-                    // ২. জয়েন বাটন লুকিয়ে ফেলুন
-                    const joinBtn = matchCard.querySelector('.join-btn');
-                    if(joinBtn) {
-                        joinBtn.style.display = 'none';
-                    }
-                    
-                    // ৩. ফুটার অ্যাডজাস্ট করুন (টাইমার মাঝখানে আনার জন্য)
-                    const footer = matchCard.querySelector('.mc-footer');
-                    if(footer) footer.style.justifyContent = 'center';
-
-                    // ৪. টাইমার টেক্সট আপডেট করুন
-                    const timerDiv = matchCard.querySelector('.mc-timer');
-                    if (timerDiv) {
-                        timerDiv.classList.remove('upcoming');
-                        timerDiv.classList.add('live');
-                        timerDiv.innerHTML = `<i class="fas fa-circle"></i> LIVE NOW`;
-                    }
+                // র‍্যাংক অনুযায়ী ক্লাস
+                if (index === 0) {
+                    rowClass = 'stream-card rank-1';
+                    badgeHTML = `<div class="rank-badge">1</div>`;
+                } else if (index === 1) {
+                    rowClass = 'stream-card rank-2';
+                    badgeHTML = `<div class="rank-badge">2</div>`;
+                } else if (index === 2) {
+                    rowClass = 'stream-card rank-3';
+                    badgeHTML = `<div class="rank-badge">3</div>`;
                 } else {
-                    // ইস্পোর্টসের জন্য ফলব্যাক
-                    const esItem = countdown.closest('.esports-match-item');
-                    if(esItem) {
-                         const timerDiv = esItem.querySelector('.mc-timer');
-                         if(timerDiv) {
-                            timerDiv.classList.remove('upcoming');
-                            timerDiv.classList.add('live');
-                            timerDiv.innerHTML = 'Live Now';
-                         }
-                    }
-                }
-            }
-        });
-    }, 1000);
-}
-
-        
-        function startLuckyDrawTimers() {
-            setInterval(() => {
-                const countdowns = document.querySelectorAll('.ld-countdown');
-                const now = Date.now();
-
-                countdowns.forEach(countdown => {
-                    const endTime = parseInt(countdown.getAttribute('data-end-time'));
-                    if (isNaN(endTime)) return;
-
-                    const timeLeft = endTime - now;
-
-                    if (timeLeft > 0) {
-                        // এটি আপনার আগের formatTimeLeft ফাংশনটি ব্যবহার করবে
-                        countdown.textContent = formatTimeLeft(timeLeft);
-                    } else {
-                        // টাইমার ০ তে পৌঁছালে অটোমেটিক বাটন লক করে দেবে (পেজ রিলোড ছাড়াই)
-                        if (countdown.textContent === 'Draw Closed') return;
-                        
-                        countdown.textContent = 'Draw Closed';
-                        
-                        const badge = countdown.closest('.ld-badge-time');
-                        if (badge) {
-                            badge.style.background = 'rgba(239, 68, 68, 0.8)';
-                            badge.style.color = 'white';
-                        }
-                        
-                        // অটোমেটিক পারচেজ বাটন বন্ধ করে দেওয়া
-                        const card = countdown.closest('.ld-premium-card');
-                        if (card) {
-                            const btn = card.querySelector('.ld-action-btn');
-                            if (btn && !btn.disabled) {
-                                btn.disabled = true;
-                                btn.innerHTML = '<i class="fas fa-lock"></i> Draw Closed';
-                                btn.style.background = '#475569';
-                                btn.style.boxShadow = 'none';
-                                btn.style.color = '#94a3b8';
-                                btn.style.cursor = 'not-allowed';
-                                
-                                // Quantity ইনপুট বক্স থাকলে তা লুকিয়ে ফেলা
-                                const qtyInput = card.querySelector('.ld-action-area > div');
-                                if(qtyInput) qtyInput.style.display = 'none';
-                            }
-                        }
-                    }
-                });
-            }, 1000);
-        }
-        
-        function formatTimeLeft(milliseconds) {
-            if (milliseconds <= 0) return '00:00:00';
-            
-            const secondsTotal = Math.floor(milliseconds / 1000);
-            const days = Math.floor(secondsTotal / (3600 * 24));
-            const hours = Math.floor((secondsTotal % (3600 * 24)) / 3600);
-            const minutes = Math.floor((secondsTotal % 3600) / 60);
-            const seconds = secondsTotal % 60;
-            
-            const h = hours.toString().padStart(2, '0');
-            const m = minutes.toString().padStart(2, '0');
-            const s = seconds.toString().padStart(2, '0');
-
-            if (days > 0) {
-                return `${days}d ${h}:${m}:${s}`;
-            }
-            return `${h}:${m}:${s}`;
-        }
-
-        
-        function openJoinModal(match) {
-    // আগে চেক করা ইউজার জয়েন করেছে কিনা বা স্লট আছে কিনা
-    if (appState.myMatches.some(m => m.matchId === match.id)) {
-        alert('You have already joined this match!');
-        return;
-    }
-    if (match.slots.available <= 0) {
-        alert('This match is full!');
-        return;
-    }
-
-    // ভ্যালু সেট করা
-    document.getElementById('selectedMatchId').value = match.id;
-    document.getElementById('selectedMatchType').value = match.type;
-    
-    // --- নতুন লজিক শুরু (Dynamic Dropdown) ---
-    const joinSelect = document.getElementById('joinType');
-    joinSelect.innerHTML = ''; // আগের অপশন মুছে ফেলা
-
-    // Admin Panel থেকে 'type' সাধারণত "Solo", "Duo", "Squad" হিসেবে আসে
-    const matchType = match.type.toLowerCase(); // ছোট হাতের অক্ষরে কনভার্ট (solo, duo, squad)
-
-    // ১. Solo অপশন সবসময় থাকবে (আপনার লজিক অনুযায়ী)
-    const optSolo = document.createElement('option');
-    optSolo.value = 'solo';
-    optSolo.innerText = 'Solo';
-    joinSelect.appendChild(optSolo);
-
-    // ২. যদি ম্যাচ Duo বা Squad হয়, তবে Duo অপশন যোগ হবে
-    if (matchType === 'duo' || matchType === 'squad') {
-        const optDuo = document.createElement('option');
-        optDuo.value = 'duo';
-        optDuo.innerText = 'Duo';
-        joinSelect.appendChild(optDuo);
-    }
-
-    // ৩. যদি ম্যাচ Squad হয়, তবে Squad অপশন যোগ হবে
-    if (matchType === 'squad') {
-        const optSquad = document.createElement('option');
-        optSquad.value = 'squad';
-        optSquad.innerText = 'Squad';
-        joinSelect.appendChild(optSquad);
-    }
-    // --- নতুন লজিক শেষ ---
-
-    // রুলস টেক্সট আপডেট
-    let rulesText = '';
-    switch(match.type) {
-        case 'esports':
-            rulesText = 'Only Squad (4 players mandatory)';
-            break;
-        case 'lone':
-            rulesText = 'Solo or Duo only';
-            break;
-        default:
-            rulesText = 'Solo: 1 FF Name, Duo: 2 FF Names, Squad: 4 FF Names';
-    }
-    joinRulesText.textContent = rulesText;
-
-    // ডিফল্ট সিলেক্ট অনুযায়ী ইনপুট বক্স আপডেট করা
-    updatePlayerInputs();
-    
-    // মডাল ওপেন করা
-    joinModal.classList.add('active');
-}
-
-
-
-
-
-        function updatePlayerInputs() {
-            const joinType = joinTypeSelect.value;
-            let playerCount = 1;
-            
-            if (joinType === 'duo') playerCount = 2;
-            if (joinType === 'squad') playerCount = 4;
-            
-            playerNamesContainer.innerHTML = '';
-            
-            for (let i = 0; i < playerCount; i++) {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'form-input player-name';
-                input.placeholder = `Player ${i+1} FF Name`;
-                input.required = true;
-                playerNamesContainer.appendChild(input);
-            }
-        }
-
-  async function joinMatch() {
-    const matchId = document.getElementById('selectedMatchId').value;
-    const joinType = document.getElementById('joinType').value;
-    
-    // ইনপুট থেকে প্লেয়ারদের নাম সংগ্রহ করা
-    const playerInputs = playerNamesContainer.querySelectorAll('.player-name');
-    const playerNames = Array.from(playerInputs).map(input => input.value.trim());
-    
-    if (playerNames.some(name => name === '')) {
-        alert('Please fill in all player names');
-        return;
-    }
-
-    // বাটন লোডিং স্টেট (যাতে ইউজার বারবার ক্লিক করতে না পারে)
-    const submitBtn = document.querySelector('#joinForm button[type="submit"]');
-    let originalText = "";
-    if (submitBtn) {
-        originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-    }
-
-    try {
-        // Cloudflare Worker-এ সিকিউর রিকোয়েস্ট পাঠানো
-        const response = await fetch(CLOUDFLARE_WORKER_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                initData: tg.initData,
-                action: "join-match",
-                matchId: matchId,
-                joinType: joinType,
-                players: playerNames
-            })
-        });
-
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-            alert("🎉 " + result.message);
-            joinModal.classList.remove('active'); // সফল হলে মোডাল বন্ধ করে দেবে
-            // আপনার ফায়ারবেস লিসেনার নিজে থেকেই ব্যালেন্স এবং স্লট আপডেট করে নেবে
-        } else {
-            alert("❌ " + (result.error || "Failed to join match."));
-        }
-    } catch (error) {
-        console.error("Join Match Error:", error);
-        alert("Network error! Please check your internet connection and try again.");
-    } finally {
-        // বাটন আবার স্বাভাবিক অবস্থায় ফিরিয়ে আনা
-        if (submitBtn) {
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
-        }
-    }
-}
-
-
-// এই ফাংশনটি loadEsports() এর ঠিক উপরে বসান
-function switchEsportsHistoryTab(tabType) {
-    currentEsportsHistoryTab = tabType;
-
-    // বাটন ডিজাইন আপডেট
-    document.getElementById('esHistTab_all').classList.remove('active');
-    document.getElementById('esHistTab_my').classList.remove('active');
-    document.getElementById(`esHistTab_${tabType}`).classList.add('active');
-
-    // ডাটা রিফ্রেশ
-    renderEsports();
-}
-
-
-
-  
-        // --- ESPORTS LOGIC ---
-
-        function loadEsports() {
-            // 1. Load Matches
-            database.ref('esports/matches').on('value', (snapshot) => {
-                const matches = snapshot.val() || {};
-                appState.esportsData.matches = Object.keys(matches).map(key => ({
-                    id: key,
-                    ...matches[key]
-                }));
-                checkEsportsRegistrations();
-                renderEsports(); // Trigger UI Update
-            });
-
-            // 3. Load History
-            appState.esportsData.history = [
-                // { title: "Season 1", winner: "Alpha", date: "..." } 
-            ];
-        }
-
-        function checkEsportsRegistrations() {
-            appState.esportsData.registrations = {};
-            appState.esportsData.counts = {}; 
-
-            const checkPromises = appState.esportsData.matches.map(match => {
-                return database.ref(`esports/registrations/${match.id}`).once('value').then(snap => {
-                    const registrations = snap.val() || {};
-                    let isRegistered = false;
-                    
-                    const count = Object.keys(registrations).length;
-                    appState.esportsData.counts[match.id] = count;
-
-                    Object.values(registrations).forEach(reg => {
-                        if (reg.userId === appState.userId) {
-                            isRegistered = true;
-                        }
-                    });
-                    
-                    appState.esportsData.registrations[match.id] = isRegistered;
-                });
-            });
-
-            Promise.all(checkPromises).then(() => {
-                renderEsports();
-            });
-        }
-
-       function renderEsports() {
-    // --- 1. Matches Tab (The Elite Design) ---
-    const matchesView = document.getElementById('esportsMatchesView');
-    const activeMatches = appState.esportsData.matches.filter(m => m.status !== 'finished');
-
-    if (activeMatches.length > 0) {
-        let html = '';
-        
-        const sortedMatches = activeMatches.sort((a, b) => {
-            const statusOrder = { 'live': 1, 'upcoming': 2 };
-            return (statusOrder[a.status] || 3) - (statusOrder[b.status] || 3);
-        });
-
-        sortedMatches.forEach(match => {
-            const isLive = match.status === 'live';
-            const statusClass = isLive ? 'live' : 'upcoming';
-            const statusHTML = isLive ? '<div class="dot"></div> LIVE NOW' : '<i class="fas fa-bolt"></i> UPCOMING';
-            
-            let timerHTML = '';
-            if (!isLive && match.rawTime) {
-                const matchTime = new Date(match.rawTime).getTime();
-                const timeLeft = matchTime - Date.now();
-                const countdownText = formatTimeLeft(timeLeft);
-                timerHTML = `<div class="emc-timer countdown" data-end-time="${matchTime}"><i class="fas fa-clock" style="color:#fcd34d;"></i> Starts in ${countdownText}</div>`;
-            } else if (isLive) {
-                timerHTML = `<div class="emc-timer" style="color:#fca5a5; border-color:rgba(239,68,68,0.3);"><i class="fas fa-satellite-dish"></i> Match Running</div>`;
-            }
-
-            const isRegistered = appState.esportsData.registrations[match.id];
-            const joinedCount = appState.esportsData.counts[match.id] || 0;
-            const limit = parseInt(match.squadLimit) || 12; 
-            const isFull = joinedCount >= limit;
-            let progressPercent = limit > 0 ? (joinedCount / limit) * 100 : 0;
-            
-            let btnHTML = '';
-            if (!isLive) {
-                if (isRegistered) {
-                    btnHTML = `<button class="emc-btn joined" disabled><i class="fas fa-check-circle"></i> Joined</button>`;
-                } else if (isFull) {
-                    btnHTML = `<button class="emc-btn full" disabled><i class="fas fa-ban"></i> Full</button>`;
-                } else {
-                    btnHTML = `<button class="emc-btn" onclick="openEsportsJoinModal('${match.id}')">Register</button>`;
-                }
-            } else {
-                 btnHTML = `<button class="emc-btn full" disabled>Closed</button>`;
-            }
-
-            const entryDisplay = match.entryFee > 0 ? `৳${match.entryFee}` : 'FREE';
-
-            html += `
-                <div class="elite-match-card">
-                    <div class="emc-banner">
-                        <div class="emc-status ${statusClass}">${statusHTML}</div>
-                        ${timerHTML}
-                    </div>
-                    
-                    <div class="emc-content">
-                        <div class="emc-main-info">
-                            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                                <div>
-                                    <div class="emc-title">${match.title}</div>
-                                    <div class="emc-subtitle"><i class="far fa-calendar-alt" style="color:var(--primary);"></i> ${match.matchTime || 'TBA'} • ${match.map || 'Any Map'}</div>
-                                </div>
-                                <button class="emc-secondary-btn" onclick="showEsportsRoom('${match.id}')" title="Get Room ID">
-                                    <i class="fas fa-key" style="color:#8b5cf6;"></i> Room
-                                </button>
-                            </div>
-                            
-                            <div class="emc-stats-row">
-                                <div class="emc-stat">
-                                    <div class="emc-stat-label">Entry</div>
-                                    <div class="emc-stat-value">${entryDisplay}</div>
-                                </div>
-                                <div style="width:1px; background:rgba(148,163,184,0.3);"></div>
-                                <div class="emc-stat">
-                                    <div class="emc-stat-label">Prize Pool</div>
-                                    <div class="emc-stat-value prize">৳${match.prizePool || 0}</div>
-                                </div>
-                                <div style="width:1px; background:rgba(148,163,184,0.3);"></div>
-                                <div class="emc-stat">
-                                    <div class="emc-stat-label">Format</div>
-                                    <div class="emc-stat-value" style="font-size:16px; margin-top:2px;">SQUAD</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="emc-action-area">
-                            <div class="emc-progress-box" onclick="openEsportsParticipantsModal('${match.id}')" style="cursor:pointer;" title="View Teams">
-                                <div class="emc-prog-text">
-                                    <span><i class="fas fa-users" style="margin-right:4px;"></i> Teams Registered</span>
-                                    <span>${joinedCount}/${limit}</span>
-                                </div>
-                                <div class="emc-prog-track">
-                                    <div class="emc-prog-fill" style="width: ${progressPercent}%;"></div>
-                                </div>
-                            </div>
-                            ${btnHTML}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        matchesView.innerHTML = html;
-    } else {
-        matchesView.innerHTML = `
-            <div style="text-align:center; padding: 60px 20px; background: var(--card-light); border-radius: 24px; border: 1px dashed #cbd5e1;">
-                <div style="width: 80px; height: 80px; background: rgba(59,130,246,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px;">
-                    <i class="fas fa-gamepad" style="font-size: 35px; color: var(--primary);"></i>
-                </div>
-                <h3 style="font-size: 20px; font-weight: 900; color: var(--text-light); margin-bottom: 8px;">No Tournaments</h3>
-                <p style="font-size: 14px; color: var(--gray); font-weight: 500;">New battles will be scheduled soon. Stay tuned!</p>
-            </div>`;
-    }
-
-    // --- 2. Points Tab (Elite Compact Design) ---
-    const pointsView = document.getElementById('esportsPointsView');
-    const pointsMatches = appState.esportsData.matches.filter(m => m.status === 'live' || m.status === 'finished');
-
-    if (pointsMatches.length > 0) {
-        let html = '';
-        pointsMatches.forEach(match => {
-            const isFinished = match.status === 'finished';
-            const iconColor = isFinished ? '#10b981' : '#ef4444';
-            const badgeBg = isFinished ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)';
-            
-            html += `
-                <div class="elite-match-card" style="margin-bottom:12px; border-radius:16px; padding: 15px 20px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="openSpecificPointsModal('${match.id}')">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <div style="width:45px; height:45px; border-radius:12px; background:${badgeBg}; color:${iconColor}; display:flex; justify-content:center; align-items:center; font-size:20px;">
-                            <i class="fas ${isFinished ? 'fa-flag-checkered' : 'fa-broadcast-tower'}"></i>
-                        </div>
-                        <div>
-                            <div style="font-size:16px; font-weight:900; color:var(--text-light); line-height:1.2;">${match.title}</div>
-                            <div style="font-size:11px; color:var(--gray); font-weight:700; margin-top:4px;">${match.matchTime || 'TBA'}</div>
-                        </div>
-                    </div>
-                    <div class="emc-secondary-btn" style="padding:10px 15px;"><i class="fas fa-list-ol"></i> Standings</div>
-                </div>
-            `;
-        });
-        pointsView.innerHTML = html;
-    } else {
-        pointsView.innerHTML = `<div style="text-align:center; padding: 50px; color:var(--gray); font-weight:600;"><i class="fas fa-list-ol" style="font-size:30px; margin-bottom:10px; opacity:0.5;"></i><br>No standings available.</div>`;
-    }
-
-    // --- 3. History Tab (Elite Design) ---
-    const historyContainer = document.getElementById('esportsHistoryListContainer');
-    let finishedMatches = appState.esportsData.matches.filter(m => m.status === 'finished');
-
-    finishedMatches.sort((a, b) => new Date(b.rawTime || 0) - new Date(a.rawTime || 0));
-    if (currentEsportsHistoryTab === 'my') {
-        finishedMatches = finishedMatches.filter(match => appState.esportsData.registrations[match.id]);
-    }
-
-    if (finishedMatches.length > 0) {
-        let html = '';
-        finishedMatches.forEach(match => {
-            const isRegistered = appState.esportsData.registrations[match.id];
-            const userStatusBadge = isRegistered ? `<span style="font-size:9px; background:linear-gradient(135deg,var(--primary),#8b5cf6); color:white; padding:3px 8px; border-radius:10px; margin-left:8px; vertical-align:middle; box-shadow:0 2px 5px rgba(59,130,246,0.4);">PLAYED</span>` : '';
-
-            html += `
-                <div class="elite-match-card" style="margin-bottom:12px; border-radius:16px; padding: 15px 20px; display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="openSpecificPointsModal('${match.id}')">
-                    <div>
-                        <div style="font-size:15px; font-weight:900; color:var(--text-light); margin-bottom:4px;">${match.title} ${userStatusBadge}</div>
-                        <div style="font-size:11px; color:var(--gray); font-weight:700;"><i class="far fa-calendar-check"></i> Ended: ${match.matchTime || 'N/A'}</div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:9px; color:var(--gray); font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:2px;">Prize Pool</div>
-                        <div style="font-size:18px; font-weight:900; color:var(--success);"><span style="font-size:12px;">৳</span>${match.prizePool}</div>
-                    </div>
-                </div>
-            `;
-        });
-        historyContainer.innerHTML = html;
-    } else {
-        let msg = currentEsportsHistoryTab === 'my' ? "You haven't played any tournaments yet" : "No tournament history available";
-        historyContainer.innerHTML = `<div style="text-align:center; padding: 50px; color:var(--gray); font-weight:600;"><i class="fas fa-history" style="font-size:30px; margin-bottom:10px; opacity:0.5;"></i><br>${msg}</div>`;
-    }
-    
-    startMatchTimers();
-}
-
-        // --- NEW FUNCTION TO SHOW SPECIFIC POINTS ---
-        function openSpecificPointsModal(matchId) {
-            const modalContent = document.getElementById('esportsMatchPointsContent');
-            modalContent.innerHTML = '<div style="text-align:center; padding:20px;">Loading points...</div>';
-            esportsMatchPointsModal.classList.add('active');
-
-            // Fetch registrations for THIS specific match
-            database.ref(`esports/registrations/${matchId}`).once('value').then(snapshot => {
-                const registrations = snapshot.val() || {};
-                
-                if(Object.keys(registrations).length === 0) {
-                    modalContent.innerHTML = `<div class="no-data"><p>No data found.</p></div>`;
-                    return;
+                    // Rank 4+ (সিম্পল)
+                    rowClass = '';
+                    badgeHTML = `<span style="opacity:0.6; font-size:12px;">${rank}</span>`;
                 }
 
-                // Convert to array and sort
-                const teams = Object.values(registrations).map(reg => {
-                    const stats = reg.stats || { matches: 0, wins: 0, kills: 0, total: 0 };
-                    return {
-                        name: reg.squadName || 'Unknown',
-                        matches: stats.matches || 0,
-                        wins: stats.wins || 0,
-                        kills: stats.kills || 0,
-                        points: stats.total || 0
-                    };
-                }).sort((a, b) => b.points - a.points); // Sort descending
+                // নরমাল রো স্টাইল (কালার ফিক্স সহ)
+                let trStyle = '';
+                if(index > 2) {
+                    // ডার্ক মোড চেক করে কালার সেট করা হচ্ছে
+                    let isDark = document.body.classList.contains('dark-mode');
+                    let bg = isDark ? '#1e293b' : '#ffffff';
+                    let color = isDark ? '#fff' : '#333';
+                    trStyle = `background:${bg}; color:${color}; border-bottom:1px solid rgba(0,0,0,0.05);`;
+                }
 
-                // Build Table HTML
-                let tableHTML = `
-                    <div class="points-table-container">
-                        <table class="points-table">
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Team</th>
-                                    <th>M</th> <th>W</th> <th>Kills</th>
-                                    <th>Pts</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
-
-                teams.forEach((team, index) => {
-                    const rank = index + 1;
-                    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+                if(index > 2) {
+                    // Rank 4+
                     tableHTML += `
-                        <tr>
-                            <td class="rank-cell ${rankClass}">#${rank}</td>
+                        <tr style="${trStyle}">
+                            <td style="padding:8px; text-align:center;">${badgeHTML}</td>
+                            <td style="padding:8px 5px;">${team.name}</td>
+                            <td style="padding:8px 5px;">${team.matches}</td>
+                            <td style="padding:8px 5px;">${team.wins}</td>
+                            <td style="padding:8px 5px;">${team.kills}</td>
+                            <td style="padding:8px 5px;"><strong>${team.points}</strong></td>
+                        </tr>
+                    `;
+                } else {
+                    // Top 3 (Stream Design)
+                    tableHTML += `
+                        <tr class="${rowClass}">
+                            <td style="text-align:center;">${badgeHTML}</td>
                             <td>${team.name}</td>
                             <td>${team.matches}</td>
                             <td>${team.wins}</td>
@@ -2200,1319 +1289,1770 @@ function switchEsportsHistoryTab(tabType) {
                             <td><strong>${team.points}</strong></td>
                         </tr>
                     `;
-                });
-
-                tableHTML += `</tbody></table></div>`;
-                modalContent.innerHTML = tableHTML;
-            });
-        }
-
-        function openEsportsJoinModal(matchId) {
-            document.getElementById('esportsSelectedMatchId').value = matchId;
-            document.getElementById('esportsSquadName').value = '';
-            
-            const inputs = document.querySelectorAll('.es-player-name, .es-player-ign');
-            inputs.forEach(input => input.value = '');
-            
-            esportsJoinModal.classList.add('active');
-        }
-
-        function submitEsportsRegistration() {
-            const matchId = document.getElementById('esportsSelectedMatchId').value;
-            const squadName = document.getElementById('esportsSquadName').value.trim();
-            
-            const nameInputs = document.querySelectorAll('.es-player-name');
-            const ignInputs = document.querySelectorAll('.es-player-ign');
-            
-            let players = [];
-            let isValid = true;
-
-            for(let i = 0; i < 4; i++) {
-                const name = nameInputs[i].value.trim();
-                const ign = ignInputs[i].value.trim();
-                
-                if(!name || !ign) {
-                    isValid = false;
-                    break;
-                }
-                players.push({ name: name, ign: ign });
-            }
-
-            if (!squadName || !isValid) {
-                alert('Please fill in Squad Name and ALL 4 Player details.');
-                return;
-            }
-
-            database.ref('esports/matches/' + matchId).once('value').then(matchSnap => {
-                const matchData = matchSnap.val();
-                const entryFee = parseFloat(matchData.entryFee) || 0;
-
-                database.ref('users/' + appState.userId).once('value').then(userSnap => {
-                    const userData = userSnap.val() || {};
-                    const currentBalance = parseFloat(userData.balance) || 0;
-
-                    if (currentBalance < entryFee) {
-                        alert(`Insufficient Balance! You need ৳${entryFee} but have ৳${currentBalance}`);
-                        return;
-                    }
-
-                    const newBalance = currentBalance - entryFee;
-let currentWinning = parseFloat(userData.winningBalance) || 0;
-
-let userUpdates = {
-    balance: newBalance
-};
-
-// --- 🚨 FIXED LOGIC: Adjust Winning Balance ---
-if (currentWinning > newBalance) {
-    userUpdates.winningBalance = newBalance;
-}
-
-database.ref('users/' + appState.userId).update(userUpdates);
-
-if (entryFee > 0) {
-    database.ref('transactions').push({
-        userId: appState.userId,
-        type: 'match_entry',
-        amount: entryFee,
-        date: Date.now(),
-        status: 'success',
-        method: 'Esports Entry',
-        matchId: matchId,
-        title: `Entry Fee: ${matchData.title}`
-    });
-}
-
-
-                    const registrationData = {
-                        squadName: squadName,
-                        leaderName: appState.currentUser.firstName,
-                        userId: appState.userId,
-                        timestamp: Date.now(),
-                        players: players,
-                        stats: { matches: 0, wins: 0, kills: 0, total: 0 } // Initialize stats
-                    };
-
-                    database.ref(`esports/registrations/${matchId}`).push(registrationData)
-                        .then(() => {
-                            alert('Squad Registration Successful! Entry Fee Deducted.');
-                            esportsJoinModal.classList.remove('active');
-                            checkEsportsRegistrations(); 
-                            loadWallet();
-                        })
-                        .catch(error => {
-                            console.error("Error registering:", error);
-                            alert('Registration Failed. Please try again.');
-                        });
-
-                });
-            });
-        }
-
-        function openEsportsParticipantsModal(matchId) {
-            participantsListContent.innerHTML = '<div style="text-align:center; padding:20px;">Loading Squads...</div>';
-            participantsModal.classList.add('active');
-
-            database.ref(`esports/registrations/${matchId}`).once('value').then(snapshot => {
-                const registrations = snapshot.val() || {};
-                participantsListContent.innerHTML = '';
-
-                if (Object.keys(registrations).length === 0) {
-                    participantsListContent.innerHTML = `
-                        <div class="no-data" style="padding: 20px;">
-                            <i class="fas fa-users" style="font-size:32px;"></i>
-                            <p>No squads joined yet</p>
-                        </div>`;
-                } else {
-                    let serial = 1;
-                    Object.values(registrations).forEach(reg => {
-                        const item = document.createElement('div');
-                        item.className = 'participant-item';
-                        item.style.flexDirection = 'column'; 
-                        item.style.alignItems = 'flex-start';
-                        
-                        let playersListHTML = '';
-                        if(Array.isArray(reg.players)) {
-                            playersListHTML = reg.players.map(p => `• ${p.name} [${p.ign}]`).join('<br>');
-                        }
-
-                        item.innerHTML = `
-                            <div style="display:flex; width:100%; align-items:center; margin-bottom:5px;">
-                                <div class="participant-serial">${serial++}</div>
-                                <div class="participant-name" style="color:var(--primary); font-size:15px;">${reg.squadName}</div>
-                            </div>
-                            <div style="padding-left:42px; font-size:12px; color:var(--gray); width:100%;">
-                                ${playersListHTML}
-                            </div>
-                        `;
-                        participantsListContent.appendChild(item);
-                    });
                 }
             });
-        }
 
-        function showEsportsRoom(matchId) {
-            if (!appState.esportsData.registrations[matchId]) {
-                alert('You must register for this match to see room details!');
-                return;
-            }
-
-            const match = appState.esportsData.matches.find(m => m.id === matchId);
-            
-            if(match) {
-                const idDisplay = document.getElementById('roomIdDisplay');
-                const passDisplay = document.getElementById('roomPasswordDisplay');
-                const copyId = document.getElementById('copyRoomIdBtn');
-                const copyPass = document.getElementById('copyRoomPassBtn');
-
-                if(match.roomId && match.roomId.trim() !== "") {
-                    idDisplay.textContent = match.roomId;
-                    copyId.setAttribute('data-text', match.roomId);
-                    copyId.style.display = 'inline-block';
-                } else {
-                    idDisplay.textContent = "Waiting for Admin...";
-                    copyId.style.display = 'none';
-                }
-
-                if(match.roomPassword && match.roomPassword.trim() !== "") {
-                    passDisplay.textContent = match.roomPassword;
-                    copyPass.setAttribute('data-text', match.roomPassword);
-                    copyPass.style.display = 'inline-block';
-                } else {
-                    passDisplay.textContent = "Waiting for Admin...";
-                    copyPass.style.display = 'none';
-                }
-
-                roomInfoModal.classList.add('active');
-            }
-        }
-
-        function loadMyMatches() {
-    const container = document.getElementById('myMatchesContainer');
-    
-    if (!appState.myMatches || appState.myMatches.length === 0) {
-        container.innerHTML = `
-            <div class="no-data" id="noMyMatches" style="background: var(--card-light); border-radius: 16px; padding: 50px 20px; border: 1px dashed #cbd5e1;">
-                <div style="width: 70px; height: 70px; background: rgba(59, 130, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
-                    <i class="fas fa-ghost" style="font-size: 35px; color: var(--primary);"></i>
-                </div>
-                <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 8px; color: var(--text-light);">No Matches Yet</h3>
-                <p style="font-size: 13px; color: var(--gray); margin-bottom: 25px;">You haven't registered for any battles. Ready to drop in?</p>
-                <button class="join-btn" onclick="switchSection('play')" style="padding: 10px 25px;">
-                    <i class="fas fa-play"></i> Join a Match
-                </button>
-            </div>
-        `;
-        return;
+            tableHTML += '</tbody></table></div>';
+            modalContent.innerHTML = tableHTML;
+        });
     }
     
-    container.innerHTML = '';
-    
-    appState.myMatches.forEach(userMatch => {
-        const match = appState.matches.find(m => m.id === userMatch.matchId);
-        if (!match) return;
-        
-        const card = document.createElement('div');
-        
-        let statusClass = match.status === 'playing' ? 'live' : 'upcoming';
-        let statusText = match.status === 'playing' ? 'Live Now' : 'Upcoming';
-        if(match.status === 'ended') { statusClass = 'ended'; statusText = 'Ended'; }
-
-        card.className = `my-match-card-modern ${statusClass}`;
-
-        // Date & Time Format
-        const matchDate = new Date(match.startTime);
-        const dateStr = matchDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const timeStr = matchDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
-
-        // Room Details / Secret Section Logic (Compact)
-        let secretSectionHTML = '';
-        if (match.roomId && match.roomPassword) {
-            secretSectionHTML = `
-                <div class="mm-room-details">
-                    <div class="mm-room-box">
-                        <div>
-                            <span style="font-size:9px; color:var(--gray); display:block; line-height:1; margin-bottom:2px;">Room ID</span>
-                            <span>${match.roomId}</span>
-                        </div>
-                        <button class="copy-btn" data-text="${match.roomId}"><i class="fas fa-copy"></i></button>
-                    </div>
-                    <div class="mm-room-box">
-                        <div>
-                            <span style="font-size:9px; color:var(--gray); display:block; line-height:1; margin-bottom:2px;">Password</span>
-                            <span>${match.roomPassword}</span>
-                        </div>
-                        <button class="copy-btn" data-text="${match.roomPassword}"><i class="fas fa-copy"></i></button>
-                    </div>
-                </div>
-            `;
-        } else {
-            secretSectionHTML = `
-                <div class="mm-locked">
-                    <i class="fas fa-lock" style="margin-right: 4px;"></i> Room ID & Pass will be given here before match starts.
-                </div>
-            `;
+    // --- FIX: Deposit Page Full Screen Style via JavaScript ---
+document.addEventListener("DOMContentLoaded", function() {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        #deposit-section {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999; /* সবার উপরে থাকার জন্য */
+            background-color: var(--light-bg); /* লাইট মোড কালার */
+            overflow-y: auto;
+            padding: 20px;
+            display: none; /* শুরুতে বন্ধ থাকবে */
+            box-sizing: border-box;
         }
 
-        // WhatsApp Share Text
-        const waText = encodeURIComponent(`🎮 Match: ${match.title}\n⏰ Time: ${timeStr}, ${dateStr}\n👥 Squad: ${userMatch.playerNames.join(', ')}\n\nBe ready!`);
+        /* ডার্ক মোডের জন্য ব্যাকগ্রাউন্ড ফিক্স */
+        body.dark-mode #deposit-section {
+            background-color: var(--dark-bg);
+        }
 
-        card.innerHTML = `
-            <div class="mm-header">
-                <div>
-                    <div class="mm-game-name"><i class="fas fa-gamepad"></i> ${match.category ? match.category : 'BATTLE ROYALE'}</div>
-                    <div class="mm-title">${match.title}</div>
-                </div>
-                <div class="mm-status ${statusClass}">${statusText}</div>
-            </div>
-            
-            <div class="mm-info-grid">
-                <div class="mm-info-item">
-                    <span class="mm-info-label"><i class="far fa-clock"></i> Schedule</span>
-                    <span class="mm-info-value">${timeStr}, ${dateStr}</span>
-                </div>
-                <div class="mm-info-item">
-                    <span class="mm-info-label"><i class="fas fa-users"></i> Squad (${userMatch.joinType})</span>
-                    <span class="mm-info-value">${userMatch.playerNames.join(', ')}</span>
-                </div>
-            </div>
-            
-            ${secretSectionHTML}
-            
-            <div class="mm-actions">
-                <a href="https://wa.me/?text=${waText}" target="_blank" class="mm-btn mm-btn-share" style="text-decoration:none;">
-                    <i class="fab fa-whatsapp"></i> Share
-                </a>
-                <button class="mm-btn mm-btn-view" onclick='openParticipantsModal(${JSON.stringify(match).replace(/"/g, "&quot;")})'>
-                    <i class="fas fa-list"></i> Participants
-                </button>
-            </div>
-        `;
-        
-        container.appendChild(card);
-    });
-}
+        /* ওপেন হওয়ার এনিমেশন */
+        #deposit-section.active {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
 
-
-       
-         // আপনার বর্তমান JS কোড (যা ঠিক আছে):
-function loadResults() {
-    if (!appState.matches) return;
-
-    // ১. শুধুমাত্র 'ended' স্ট্যাটাসের ম্যাচগুলো ফিল্টার করা হচ্ছে
-    const endedMatches = appState.matches.filter(m => m.status === 'ended');
-    
-    // ২. সর্ট করা হচ্ছে (নতুন শেষ হওয়া ম্যাচ আগে দেখাবে)
-    endedMatches.sort((a, b) => b.startTime - a.startTime);
-
-    appState.results = endedMatches;
-    renderResults();
-}
-
-
-function renderResults() {
-    const container = document.getElementById('resultsContainer');
-    
-    // ১. যদি কোনো রেজাল্ট না থাকে
-    if (!appState.results || appState.results.length === 0) {
-        container.innerHTML = `
-            <div class="rc-no-data">
-                <i class="fas fa-trophy"></i>
-                <h3>No Results Yet</h3>
-                <p style="font-size: 13px; color: var(--gray); font-weight: 500;">Finished matches will appear here.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = '';
-    
-    // ২. প্রতিটি রেজাল্ট এর জন্য প্রিমিয়াম কার্ড তৈরি
-    appState.results.forEach(match => {
-        // তারিখ এবং সময় ফরম্যাট
-        const dateObj = new Date(match.startTime);
-        const dateStr = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const timeStr = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true });
-
-        const card = document.createElement('div');
-        card.className = 'result-card-pro';
-        
-        card.innerHTML = `
-            <div class="rc-header">
-                <div class="rc-title-box">
-                    <h3>${match.title}</h3>
-                    <div class="rc-time"><i class="far fa-calendar-check"></i> ${dateStr} • ${timeStr}</div>
-                </div>
-                <div class="rc-status-badge">
-                    <i class="fas fa-check-circle"></i> Finished
-                </div>
-            </div>
-            
-            <div class="rc-body">
-                <div class="rc-stat">
-                    <div class="rc-stat-label">Match Type</div>
-                    <div class="rc-stat-val">${match.type}</div>
-                </div>
-                <div class="rc-stat">
-                    <div class="rc-stat-label">Prize Pool</div>
-                    <div class="rc-stat-val prize">৳${match.prizePool}</div>
-                </div>
-                <div class="rc-stat">
-                    <div class="rc-stat-label">Per Kill</div>
-                    <div class="rc-stat-val">৳${match.perKill || 0}</div>
-                </div>
-            </div>
-            
-            <div class="rc-footer">
-                <div style="font-size: 11px; color: var(--gray); font-weight: 700; text-transform: uppercase;">
-                    <i class="fas fa-map-marker-alt"></i> Category: ${match.category ? match.category : 'N/A'}
-                </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="rc-btn" style="background:var(--primary);" onclick="openMatchScoreboardModal('${match.id}')">
-                        <i class="fas fa-list-ol"></i> Winners
-                    </button>
-                    <button class="rc-btn" onclick="openPrizePoolModalById('${match.id}')">
-    <i class="fas fa-gift"></i> Prizes
-</button>
-
-                </div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-
-// --- Default Ranks ---
-const defaultRanks = [
-    { name: "Bronze I", exp: 0, reward: 0, color: "#cd7f32", icon: "fa-medal" },
-    { name: "Bronze II", exp: 50, reward: 0, color: "#cd7f32", icon: "fa-medal" },
-    { name: "Bronze III", exp: 100, reward: 0, color: "#cd7f32", icon: "fa-medal" },
-    { name: "Silver I", exp: 150, reward: 5, color: "#94a3b8", icon: "fa-medal" },
-    { name: "Silver II", exp: 250, reward: 5, color: "#94a3b8", icon: "fa-medal" },
-    { name: "Silver III", exp: 350, reward: 5, color: "#94a3b8", icon: "fa-medal" },
-    { name: "Gold I", exp: 500, reward: 10, color: "#fbbf24", icon: "fa-trophy" },
-    { name: "Gold II", exp: 700, reward: 10, color: "#fbbf24", icon: "fa-trophy" },
-    { name: "Gold III", exp: 900, reward: 10, color: "#fbbf24", icon: "fa-trophy" },
-    { name: "Platinum I", exp: 1200, reward: 20, color: "#0ea5e9", icon: "fa-gem" },
-    { name: "Platinum II", exp: 1500, reward: 20, color: "#0ea5e9", icon: "fa-gem" },
-    { name: "Platinum III", exp: 1800, reward: 20, color: "#0ea5e9", icon: "fa-gem" },
-    { name: "Diamond I", exp: 2200, reward: 50, color: "#8b5cf6", icon: "fa-gem" },
-    { name: "Diamond II", exp: 2600, reward: 50, color: "#8b5cf6", icon: "fa-gem" },
-    { name: "Diamond III", exp: 3000, reward: 50, color: "#8b5cf6", icon: "fa-gem" },
-    { name: "Master", exp: 4000, reward: 100, color: "#ef4444", icon: "fa-crown" },
-    { name: "Grandmaster", exp: 6000, reward: 200, color: "#dc2626", icon: "fa-crown" }
-];
-
-let dynamicRanksConfig = defaultRanks;
-
-// Firebase থেকে ডাটা আনার সময় Object কে Array তে কনভার্ট করার সেফটি লজিক
-database.ref('settings/ranks').on('value', snap => {
-    if(snap.exists()) {
-        const data = snap.val();
-        // Firebase object দিলে সেটাকে Array তে কনভার্ট করে নিবে
-        dynamicRanksConfig = Array.isArray(data) ? data : Object.values(data);
-    } else {
-        dynamicRanksConfig = defaultRanks;
-    }
-    loadUserProfile(); 
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+    `;
+    document.head.appendChild(style);
 });
 
-// Rank ক্যালকুলেশন ফিক্স (Number conversion)
-function getRankInfo(exp) {
-    exp = Number(exp) || 0; // String থাকলেও Number করে নিবে
+
+// --- COMPLETE DEPOSIT PAGE SOLUTION (JS + CSS) ---
+document.addEventListener("DOMContentLoaded", function() {
+    // 1. CSS ইনজেকশন (ডিজাইন ফিক্স এবং স্টাইল)
+    const style = document.createElement('style');
+    style.innerHTML = `
+        /* ফুল স্ক্রিন ফিক্স (আগের সমস্যা সমাধান) */
+        #deposit-section {
+            position: fixed !important;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99999;
+            background-color: var(--light-bg);
+            overflow-y: auto;
+            padding: 20px;
+            display: none;
+            box-sizing: border-box;
+        }
+        body.dark-mode #deposit-section { background-color: var(--dark-bg); }
+        #deposit-section.active { display: block; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        /* মেথড লিস্ট ডিজাইন (পাশাপাশি) */
+        .payment-methods-horizontal {
+            display: flex; gap: 10px; overflow-x: auto; 
+            padding: 5px 2px; margin-bottom: 20px; scrollbar-width: none;
+        }
+        .payment-methods-horizontal::-webkit-scrollbar { display: none; }
+
+        /* কার্ড ডিজাইন */
+        .payment-method-card-row {
+            min-width: 100px; width: 110px;
+            background: var(--light); border: 1px solid #e5e7eb;
+            border-radius: 12px; padding: 15px 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+        }
+        body.dark-mode .payment-method-card-row { background: var(--card-dark); border-color: #374151; }
+
+        /* সিলেক্টেড কার্ড ডিজাইন (Highlight) */
+        .payment-method-card-row.selected {
+            border-color: var(--primary);
+            background-color: rgba(59, 130, 246, 0.1);
+            transform: scale(0.95);
+        }
+        
+        /* আইকন সাইজ */
+        .pm-icon-row { font-size: 24px; margin-bottom: 5px; }
+    `;
+    document.head.appendChild(style);
+});
+
+// 2. মেথড লোড করার ফাংশন (আপডেট করা হয়েছে)
+window.loadDepositMethodsPage = function() {
+    document.getElementById('depositStep2').style.display = 'none'; 
+    const container = document.getElementById('paymentMethodsList');
     
-    // সেফটি ফলব্যাক
-    if(!dynamicRanksConfig || dynamicRanksConfig.length === 0) {
-        dynamicRanksConfig = defaultRanks;
-    }
-
-    let currentRank = dynamicRanksConfig[0];
-    let nextRank = dynamicRanksConfig[1] || currentRank;
-    let isMax = false;
-
-    for (let i = 0; i < dynamicRanksConfig.length; i++) {
-        // ডাটাবেস থেকে আসা EXP কে Number এ কনভার্ট করে তুলনা করা
-        if (exp >= Number(dynamicRanksConfig[i].exp)) {
-            currentRank = dynamicRanksConfig[i];
-            nextRank = dynamicRanksConfig[i + 1] || dynamicRanksConfig[i];
-        } else {
-            break; // যখনই ইউজারের exp পরবর্তী র‍্যাংক থেকে ছোট হবে, লুপ থেমে যাবে
-        }
-    }
-
-    // ম্যাক্স র‍্যাংক কিনা চেক করা
-    if (currentRank.name === dynamicRanksConfig[dynamicRanksConfig.length - 1].name) {
-        isMax = true;
-    }
-
-    return {
-        name: currentRank.name,
-        color: currentRank.color || "#cd7f32",
-        icon: currentRank.icon || "fa-medal",
-        next: isMax ? Number(currentRank.exp) : Number(nextRank.exp),
-        prev: Number(currentRank.exp),
-        isMax: isMax
-    };
-}
-
-        
-        function loadUserProfile() {
-    if (!appState.userId) return;
+    // রিসেট স্টেপ ট্র্যাকার
+    document.getElementById('step2Dot').classList.remove('active');
+    document.getElementById('step3Dot').classList.remove('active');
+    document.getElementById('stepLineFill').style.width = '0%';
     
-    // Firebase থেকে ইউজারের ডাটা রিয়েল-টাইমে শোনা হচ্ছে
-    database.ref('users/' + appState.userId).on('value', snap => {
-        const user = snap.val() || {};
-        
-        // ১. মেইন ব্যালেন্স আপডেট
-        appState.walletBalance = parseFloat(user.balance) || 0;
-        const mainBalanceEl = document.getElementById('walletBalance');
-        if(mainBalanceEl) {
-            mainBalanceEl.textContent = `৳${appState.walletBalance.toFixed(2)}`;
-        }
-        
-        // ২. উইনিং ব্যালেন্স আপডেট (স্টেট + UI) -- এই অংশটি মিসিং ছিল
-        if(!appState.currentUser) appState.currentUser = {}; 
-        appState.currentUser.winningBalance = parseFloat(user.winningBalance) || 0;
-
-        // Withdraw সেকশনের ব্যালেন্স টেক্সট আপডেট করা
-        const winningBalanceEl = document.getElementById('cardWinningBalance');
-        if (winningBalanceEl) {
-            winningBalanceEl.textContent = appState.currentUser.winningBalance.toFixed(2);
-        }
-        
-      // ৩. স্ট্যাটস আপডেট (Matches, Kills, Wins, Coins)
-if(document.getElementById('statMatches')) document.getElementById('statMatches').textContent = user.matchesPlayed || 0;
-if(document.getElementById('statKills')) document.getElementById('statKills').textContent = user.totalKills || 0;
-if(document.getElementById('statWins')) document.getElementById('statWins').textContent = user.totalWins || 0;
-
-// এই লাইনটি মিসিং ছিল, এটি যোগ করুন:
-if(document.getElementById('statCoins')) document.getElementById('statCoins').textContent = user.coins || 0;
-
-        
-                    // --- NEW: EXP & Rank System ---
-        const userExp = user.exp || 0;
-        const rank = getRankInfo(userExp);
-        
-        if(document.getElementById('profileRankName')) {
-            document.getElementById('profileRankName').textContent = rank.name;
-            document.getElementById('profileRankName').style.color = rank.color;
-        }
-        if(document.getElementById('profileRankIcon')) {
-            document.getElementById('profileRankIcon').className = `fas ${rank.icon}`;
-        }
-        if(document.getElementById('profileRankIconBox')) {
-            document.getElementById('profileRankIconBox').style.background = rank.color;
-        }
-        
-        if (rank.isMax) {
-            if(document.getElementById('profileExpText')) document.getElementById('profileExpText').textContent = `MAX EXP: ${userExp}`;
-            if(document.getElementById('rankProgressBar')) {
-                document.getElementById('rankProgressBar').style.width = '100%';
-                document.getElementById('rankProgressBar').style.background = rank.color;
-            }
-        } else {
-            if(document.getElementById('profileExpText')) document.getElementById('profileExpText').textContent = `EXP: ${userExp} / ${rank.next}`;
-            if(document.getElementById('rankProgressBar')) {
-                // প্রোগ্রেস ক্যালকুলেট করা এবং সেফটি চেক দেওয়া
-                let progress = ((userExp - rank.prev) / (rank.next - rank.prev)) * 100;
-                progress = Math.max(0, Math.min(100, progress)); // 0 থেকে 100 এর মধ্যে সীমাবদ্ধ রাখা
-                
-                document.getElementById('rankProgressBar').style.width = `${progress}%`;
-                document.getElementById('rankProgressBar').style.background = `linear-gradient(90deg, ${rank.color}, #f59e0b)`;
-            }
-        }
-       
-        const totalRefEl = document.getElementById('totalReferralsCount');
-        if(totalRefEl) {
-            totalRefEl.textContent = user.referrals || 0;
-        }
-        
-    });
-}
-
-
-        
-        
-  // রিয়েল-টাইম টাস্ক রেন্ডারিং (Fixed)
-window.loadTasks = function() {
-    const container = document.querySelector('.task-list-container');
-    if(!container) return;
+    container.innerHTML = '<div style="grid-column: 1/-1; padding:30px; text-align:center; color:var(--gray);"><i class="fas fa-spinner fa-spin" style="font-size: 30px;"></i></div>';
     
-    // ডাটা আসার আগে লোডিং এনিমেশন দেখাবে
-    container.innerHTML = '<div style="text-align:center; padding:60px 20px; color:var(--primary);"><i class="fas fa-spinner fa-spin" style="font-size:35px;"></i><p style="margin-top:15px; color:var(--gray); font-weight:600;">Loading Daily Missions...</p></div>';
-    
-    database.ref('tasks').once('value').then((snapshot) => {
-        const data = snapshot.val();
+    // 🚀 FIX: Promise.all ব্যবহার করে লোগো এবং মেথড একসাথে লোড করা হচ্ছে
+    Promise.all([
+        database.ref('settings/paymentLogos').once('value'),
+        database.ref('payment_settings/deposit').once('value')
+    ]).then(([logoSnap, snapshot]) => {
+        const logos = logoSnap.val() || {};
+        const methods = snapshot.val();
+        
         container.innerHTML = '';
         
-        if (!data || Object.keys(data).length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:50px 20px; color:var(--gray);"><i class="fas fa-tasks" style="font-size:45px; margin-bottom:15px; opacity:0.3;"></i><br><p style="font-weight:600;">No tasks available right now.</p></div>';
+        if (!methods) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--gray); font-weight:bold;">No methods available</div>';
             return;
         }
 
-        Object.keys(data).forEach(key => {
-            const t = data[key];
+        Object.keys(methods).forEach(key => {
+            const method = methods[key];
+            let logoUrl = logos.default || ''; 
+            let color = 'var(--text-light)';
+            const nameLower = method.name.toLowerCase();
             
-            // যদি টাস্ক অ্যাডমিন পজ করে রাখে, তবে ইউজারকে দেখাবে না
-            if (t.isActive === false) return; 
+            if(nameLower.includes('bkash')) { color = '#e2136e'; logoUrl = logos.bkash || logoUrl; }
+            else if(nameLower.includes('nagad')) { color = '#ec1c24'; logoUrl = logos.nagad || logoUrl; }
+            else if(nameLower.includes('rocket')) { color = '#8c3494'; logoUrl = logos.rocket || logoUrl; }
+            else if(nameLower.includes('upay')) { color = '#2b75f1'; logoUrl = logos.upay || logoUrl; }
 
-            const claimed = t.claimedBy && t.claimedBy[appState.userId];
-            const isFull = t.maxLimit > 0 && (t.claimsCount || 0) >= t.maxLimit;
-            const isExpired = t.expiryTime > 0 && Date.now() > t.expiryTime;
+            let iconHtml = logoUrl 
+                ? `<img src="${logoUrl}" alt="${method.name}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">`
+                : `<i class="fas fa-wallet" style="color:${color}; font-size: 30px; margin-bottom: 5px;"></i>`;
 
-            let status = 'pending';
-            let btnHtml = '';
-            let progressHtml = '';
-            let cardClasses = 'modern-task-card';
-
-            if(claimed) {
-                status = 'completed';
-                cardClasses += ' completed';
-                btnHtml = `<button class="task-btn-modern done-btn" disabled><i class="fas fa-check-double"></i> Done</button>`;
-                progressHtml = `<span class="tp-text" style="color:#10b981;">Completed</span>`;
-            } else if(isExpired) {
-                status = 'expired';
-                cardClasses += ' completed';
-                btnHtml = `<button class="task-btn-modern done-btn" disabled><i class="fas fa-clock"></i> Expired</button>`;
-                progressHtml = `<span class="tp-text" style="color:#ef4444;">Time is up!</span>`;
-            } else if(isFull) {
-                status = 'full';
-                cardClasses += ' completed';
-                btnHtml = `<button class="task-btn-modern done-btn" disabled><i class="fas fa-times-circle"></i> Full</button>`;
-                progressHtml = `<span class="tp-text" style="color:#f59e0b;">Limit Reached</span>`;
-            } else {
-                status = 'pending';
-                cardClasses += ' ready';
-                let progressPct = t.maxLimit > 0 ? ((t.claimsCount||0) / t.maxLimit) * 100 : 0;
-                let progText = t.maxLimit > 0 ? `${t.claimsCount||0}/${t.maxLimit}` : 'Unlimited';
-                
-                progressHtml = `
-                    <div class="tp-bar"><div class="tp-fill" style="width: ${progressPct}%;"></div></div>
-                    <span class="tp-text">${progText}</span>`;
-                
-                btnHtml = `
-                    <button class="task-btn-modern go-btn" id="goBtn_${key}" onclick="clickTask('${key}', '${t.link}')">Start</button>
-                    <button class="task-btn-modern claim-btn" id="claimBtn_${key}" style="display:none;" onclick="claimRealTask('${key}', ${t.reward})">Claim</button>
-                `;
-            }
-
-            container.innerHTML += `
-                <div class="${cardClasses}" data-status="${status}">
-                    <div class="task-icon bg-blue" style="overflow:hidden; background:transparent;">
-                        <img src="${t.image}" onerror="this.src='https://placehold.co/100x100/3b82f6/FFF?text=T'" style="width:100%; height:100%; object-fit:cover; border-radius:14px;">
-                    </div>
-                    <div class="task-details">
-                        <h4>${t.title}</h4>
-                        <div class="task-progress">${progressHtml}</div>
-                    </div>
-                    <div class="task-action">
-                        <div class="task-reward">+${t.reward} <i class="fas fa-coins"></i></div>
-                        ${btnHtml}
-                    </div>
-                </div>
+            const div = document.createElement('div');
+            div.className = 'pm-card-elite';
+            div.id = `pm-card-${key}`;
+            
+            div.innerHTML = `
+                ${iconHtml}
+                <div style="font-weight:800; font-size:13px; color:${color};">${method.name}</div>
+                <div style="font-size:9px; color:var(--gray); font-weight:700; text-transform:uppercase;">Min ৳${method.minDeposit}</div>
             `;
+            
+            div.onclick = () => selectDepositMethodPage(method, div);
+            container.appendChild(div);
         });
     }).catch(err => {
-        console.error(err);
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--danger);">Failed to load tasks from server.</div>';
+        container.innerHTML = '<div style="grid-column: 1/-1; padding:30px; text-align:center; color:#ef4444;"><i class="fas fa-exclamation-triangle"></i> Error loading methods</div>';
     });
 }
 
-// কয়েন ক্লেইম করার রিয়েল ও অ্যান্টি-চিট লজিক
-window.claimRealTask = async function(taskId, reward) {
-    const btn = document.getElementById(`claimBtn_${taskId}`);
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verify...';
-    btn.disabled = true;
 
-    try {
-        const snap = await database.ref(`tasks/${taskId}`).once('value');
-        const t = snap.val();
-        
-        if(!t) throw new Error("Task no longer exists!");
-        if(t.isActive === false) throw new Error("Task is currently paused!");
-        if(t.claimedBy && t.claimedBy[appState.userId]) throw new Error("Already claimed!");
-        if(t.expiryTime > 0 && Date.now() > t.expiryTime) throw new Error("Task expired!");
-        if(t.maxLimit > 0 && (t.claimsCount || 0) >= t.maxLimit) throw new Error("Task limit reached!");
 
-        // 🚨 TELEGRAM VERIFICATION LOGIC 🚨
-        if (t.requireTgCheck && t.tgChannel) {
-            const tokenSnap = await database.ref('settings/botToken').once('value');
-            const botToken = tokenSnap.val();
-
-            if (!botToken) throw new Error("Verification system error (Bot Token missing).");
-
-            // টেলিগ্রাম API কল করে চেক করা ইউজার চ্যানেলে আছে কিনা
-            const tgRes = await fetch(`https://api.telegram.org/bot${botToken}/getChatMember?chat_id=${t.tgChannel}&user_id=${appState.userId}`);
-            const tgData = await tgRes.json();
-
-            if (!tgData.ok) {
-                console.error("TG API Error:", tgData);
-                throw new Error("Could not verify. Make sure you joined the exact channel and try again.");
-            }
-
-            const status = tgData.result.status;
-            // যদি ইউজার লেফট নেয় বা কিক খায়
-            if (status === 'left' || status === 'kicked' || status === 'restricted') {
-                throw new Error("Verification Failed! You haven't joined the channel yet. Please join first.");
-            }
-            // ভেরিফিকেশন সফল!
-        }
-
-        // সফল হলে ডাটাবেস আপডেট
-        let updates = {};
-        updates[`tasks/${taskId}/claimsCount`] = (t.claimsCount || 0) + 1;
-        updates[`tasks/${taskId}/claimedBy/${appState.userId}`] = true;
-        
-        const uSnap = await database.ref(`users/${appState.userId}`).once('value');
-        const user = uSnap.val() || {};
-        updates[`users/${appState.userId}/coins`] = (parseInt(user.coins) || 0) + parseInt(reward);
-            
-        await database.ref().update(updates);
-
-        if(window.Telegram && window.Telegram.WebApp.HapticFeedback) {
-             window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-        }
-        
-        alert(`Success! Verification Passed. +${reward} Coins added!`);
-
-    } catch (err) {
-        alert(err.message);
-        btn.innerHTML = 'Claim';
-        btn.disabled = false;
+// 3. মেথড সিলেক্ট ফাংশন (একই পেজে দেখানোর লজিক)
+window.selectDepositMethodPage = function(method, cardElement) {
+    // Haptic Feedback for premium feel
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+        window.Telegram.WebApp.HapticFeedback.impactOccurred('medium');
     }
+
+    document.querySelectorAll('.pm-card-elite').forEach(el => el.classList.remove('selected'));
+    cardElement.classList.add('selected');
+
+    // Step Progress Animation
+    document.getElementById('stepLineFill').style.width = '50%';
+    setTimeout(() => { document.getElementById('step2Dot').classList.add('active'); }, 300);
+    setTimeout(() => { 
+        document.getElementById('stepLineFill').style.width = '100%'; 
+        setTimeout(() => { document.getElementById('step3Dot').classList.add('active'); }, 300);
+    }, 600);
+
+    const formSection = document.getElementById('depositStep2');
+    formSection.style.display = 'block';
+    
+    // Update Holographic Card Data
+    document.getElementById('targetNumber').textContent = method.number;
+    document.getElementById('minDepDisplay').textContent = method.minDeposit;
+    document.getElementById('selectedMethodNamePage').value = method.name;
+    document.getElementById('networkNameDisplay').textContent = method.name.toUpperCase();
+    
+    formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// লিংকে ক্লিক করলে ডাটাবেসে Clicks আপডেট হবে এবং Claim বাটন শো করবে
-window.clickTask = function(taskId, link) {
-    // ডাটাবেসে ক্লিক কাউন্ট বাড়ানো
-    database.ref(`tasks/${taskId}/clicksCount`).transaction(count => (count || 0) + 1);
+
+window.resetDepositPage = function() {
+    document.getElementById('depositStep2').style.display = 'none';
+    document.querySelectorAll('.pm-card-elite').forEach(el => el.classList.remove('selected'));
     
-    window.open(link, '_blank'); // লিংক ওপেন হবে
+    // Reset Progress
+    document.getElementById('step2Dot').classList.remove('active');
+    document.getElementById('step3Dot').classList.remove('active');
+    document.getElementById('stepLineFill').style.width = '0%';
     
-    // বাটন সুইচ করা (Start থেকে Claim)
-    document.getElementById(`goBtn_${taskId}`).style.display = 'none';
-    document.getElementById(`claimBtn_${taskId}`).style.display = 'inline-block';
+    // Scroll back to top
+    document.getElementById('deposit-section').scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 
+// এই কোডটি আপনার <script> ট্যাগের ভিতরে, initApp() বা DOMContentLoaded এর মধ্যে বসাতে পারেন
+// অথবা সরাসরি HTML এর শেষে নতুন <script> ট্যাগে দিতে পারেন।
 
-
-      function updateProfileDisplay() {
-    if (!appState.currentUser) return;
-    
-    document.getElementById('profileName').textContent = `${appState.currentUser.firstName} ${appState.currentUser.lastName || ''}`.trim();
-    document.getElementById('profileUsername').textContent = `@${appState.currentUser.username}`;
-
-    const avatarContainer = document.getElementById('profileAvatarContainer');
-    
-    // ❌ আগের কোডে এই ID গুলো ছিল না, তাই র্যাংক আপডেট ক্র্যাশ করতো। এখন ঠিক করা হয়েছে।
-    const badgeHTML = '<div class="min-rank-badge" id="profileRankIconBox"><i class="fas fa-medal" id="profileRankIcon"></i></div>';
-    
-    if (appState.currentUser.photoUrl && appState.currentUser.photoUrl !== 'undefined') {
-        avatarContainer.innerHTML = `<img src="${appState.currentUser.photoUrl}" class="min-avatar-img" alt="Profile">${badgeHTML}`;
-    } else {
-        avatarContainer.innerHTML = `<i class="fas fa-user-circle" style="font-size: 100px; color: #cbd5e1;"></i>${badgeHTML}`;
+const styleElement = document.createElement('style');
+styleElement.innerHTML = `
+    #withdraw-section {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 99999;
+        background-color: var(--light-bg);
+        overflow-y: auto;
+        padding: 20px;
+        display: none;
+        box-sizing: border-box;
     }
+
+    body.dark-mode #withdraw-section {
+        background-color: var(--dark-bg);
+    }
+
+    #withdraw-section.active {
+        display: block;
+        animation: slideIn 0.3s ease-out;
+    }
+`;
+document.head.appendChild(styleElement);
+
+
+// --- LEADERBOARD LOGIC (UPDATED FOR FULL PAGE & EXTRA FEATURES) ---
+
+const leaderboardBtn = document.getElementById('leaderboardBtn');
+const leaderboardContent = document.getElementById('leaderboardContent');
+const searchLeaderboardInput = document.getElementById('searchLeaderboard');
+let currentLbSort = 'exp';
+
+// বাটন ক্লিক করলে Modal এর বদলে Section ওপেন হবে
+if (leaderboardBtn) {
+    leaderboardBtn.addEventListener('click', () => {
+        switchSection('leaderboard'); 
+        loadLeaderboard('exp'); // ডিফল্ট EXP
+    });
 }
 
+// Search Event Listener
+if(searchLeaderboardInput) {
+    searchLeaderboardInput.addEventListener('input', (e) => {
+        loadLeaderboard(currentLbSort, e.target.value.toLowerCase());
+    });
+}
 
-        function loadWallet() {
-        }
-
-        // 1. ট্যাব পরিবর্তন করার ফাংশন (নতুন)
-function switchHistoryTab(tabName) {
-    currentHistoryTab = tabName;
+function loadLeaderboard(sortBy = 'exp', searchTerm = '') {
+    currentLbSort = sortBy;
     
-    const tabs = document.querySelectorAll('.p-hist-tab');
+    // Tab Active Class Update
+    const tabs = document.querySelectorAll('#lbTabsContainer .lb-tab');
     tabs.forEach(tab => {
-        if(tab.getAttribute('onclick').includes(tabName)) {
+        const onclickAttr = tab.getAttribute('onclick');
+        if(onclickAttr && onclickAttr.includes(sortBy)) {
             tab.classList.add('active');
         } else {
             tab.classList.remove('active');
         }
     });
 
-    loadTransactions();
-}
+    leaderboardContent.innerHTML = `
+        <div style="text-align:center; padding: 40px 20px;">
+            <i class="fas fa-spinner fa-spin" style="font-size: 30px; color: var(--primary);"></i>
+            <p style="margin-top:10px; color:var(--gray); font-size:14px; font-weight:600;">Ranking players...</p>
+        </div>`;
 
-function loadTransactions() {
-    const container = document.getElementById('historyListContent');
-    const summaryCount = document.getElementById('txnTotalCount');
-    
-    container.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-spinner fa-spin" style="font-size:40px; color:var(--primary);"></i><p style="margin-top:15px; color:var(--gray); font-weight:700; font-size:14px;">Fetching your records...</p></div>';
-
-    database.ref('transactions').orderByChild('userId').equalTo(appState.userId).once('value').then(snap => {
-        const data = snap.val();
-        container.innerHTML = '';
-
-        if(!data) {
-            showNoHistory(container);
-            if(summaryCount) summaryCount.textContent = '0';
-            return;
-        }
-
-        const transactions = Object.values(data).reverse();
+    database.ref('users').once('value').then(snap => {
+        const usersData = snap.val() || {};
         
-        const filteredList = transactions.filter(txn => {
-            if (currentHistoryTab === 'deposit') {
-                return txn.type === 'deposit' && 
-                       txn.method !== 'Redeem Code' && 
-                       txn.method !== 'Referral Bonus' && 
-                       txn.method !== 'Lucky Draw Winner';
-            } else if (currentHistoryTab === 'match_entry') {
-                return txn.type === 'match_entry';
-            } else if (currentHistoryTab === 'withdraw') {
-                return txn.type === 'withdraw';
-            }
-            return false;
+        let usersArray = Object.keys(usersData).map(key => {
+            return {
+                id: key,
+                username: usersData[key].username || usersData[key].firstName || 'Unknown',
+                photoUrl: usersData[key].photoUrl || null, // <-- ছবি ডাটাবেস থেকে নেওয়া হলো
+                exp: parseInt(usersData[key].exp) || 0,
+                totalKills: parseInt(usersData[key].totalKills) || 0,
+                totalWins: parseInt(usersData[key].totalWins) || 0
+            };
         });
 
-        if(summaryCount) summaryCount.textContent = filteredList.length;
+        // সর্টিং
+        usersArray.sort((a, b) => b[sortBy] - a[sortBy]);
 
-        if(filteredList.length === 0) {
-            showNoHistory(container);
+        // নিজের র‍্যাংক বের করা
+        let myRankIndex = usersArray.findIndex(u => u.id === appState.userId);
+        let myData = myRankIndex !== -1 ? usersArray[myRankIndex] : null;
+        
+        // Sticky Footer আপডেট
+        if(myData) {
+            document.getElementById('myRankDisplay').innerText = `#${myRankIndex + 1}`;
+            let scoreLabel = sortBy === 'exp' ? 'EXP' : (sortBy === 'totalKills' ? 'Kills' : 'Wins');
+            document.getElementById('myRankScore').innerText = `${myData[sortBy]} ${scoreLabel}`;
+            document.getElementById('myRankFooter').setAttribute('data-rank', myRankIndex + 1);
+            document.getElementById('myRankFooter').setAttribute('data-score', `${myData[sortBy]} ${scoreLabel}`);
+        }
+
+        // সার্চ করা হলে ফিল্টার করা
+        if (searchTerm !== '') {
+            usersArray = usersArray.filter(u => u.username.toLowerCase().includes(searchTerm));
+        }
+
+        const topUsers = usersArray.slice(0, 50);
+
+        if (topUsers.length === 0) {
+            leaderboardContent.innerHTML = `
+                <div style="text-align:center; padding:50px 20px;">
+                    <i class="fas fa-users-slash" style="font-size:40px; color:var(--gray); opacity:0.3; margin-bottom:15px;"></i>
+                    <p style="color:var(--gray); font-weight:600;">No players found</p>
+                </div>`;
             return;
         }
-    
-        filteredList.forEach(txn => {
-            const txnItem = document.createElement('div');
-            
-            let iconStyle = '';
-            let amountSign = '';
-            let iconHtml = '';
-            let amountColor = '';
-            let typeClass = '';
 
-            // --- Dynamic Gradient Icons & Styling ---
-            if (txn.type === 'deposit') {
-                typeClass = 'type-deposit';
-                amountSign = '+';
-                amountColor = '#10b981';
-                if (txn.method === 'Redeem Code') {
-                    iconStyle = 'background: linear-gradient(135deg, #8b5cf6, #6d28d9);';
-                    iconHtml = '<i class="fas fa-gift"></i>';
-                } else if (txn.method === 'Lucky Draw Winner') {
-                    iconStyle = 'background: linear-gradient(135deg, #f59e0b, #d97706);';
-                    iconHtml = '<i class="fas fa-trophy"></i>';
-                } else if (txn.method === 'Referral Bonus') {
-                    iconStyle = 'background: linear-gradient(135deg, #0ea5e9, #0284c7);';
-                    iconHtml = '<i class="fas fa-users"></i>';
-                } else {
-                    iconStyle = 'background: linear-gradient(135deg, #10b981, #047857);';
-                    iconHtml = '<i class="fas fa-level-down-alt"></i>';
-                }
-            } else if (txn.type === 'withdraw') {
-                typeClass = 'type-withdraw';
-                amountSign = '-';
-                amountColor = '#ef4444';
-                iconStyle = 'background: linear-gradient(135deg, #ef4444, #b91c1c);';
-                iconHtml = '<i class="fas fa-level-up-alt"></i>';
-            } else if (txn.type === 'match_entry') {
-                typeClass = 'type-entry';
-                amountSign = '-';
-                amountColor = 'var(--text-light)';
-                if (txn.method === 'Lucky Draw Ticket') {
-                    iconStyle = 'background: linear-gradient(135deg, #ec4899, #be185d);';
-                    iconHtml = '<i class="fas fa-ticket-alt"></i>';
-                } else {
-                    iconStyle = 'background: linear-gradient(135deg, #3b82f6, #1d4ed8);';
-                    iconHtml = '<i class="fas fa-gamepad"></i>';
-                }
+        let html = '';
+
+        // ছবি দেখানোর জন্য হেল্পার ফাংশন
+        const getAvatarHTML = (user, fallbackIcon) => {
+            if (user.photoUrl && user.photoUrl !== 'undefined') {
+                return `<img src="${user.photoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             }
-            
-            txnItem.className = `txn-card-pro ${typeClass}`;
+            return `<i class="${fallbackIcon}"></i>`;
+        };
 
-                       // --- Status Badges ---
-            let statusClass = '';
-            let statusText = txn.status.toUpperCase();
-            let statusIcon = ''; // নতুন আইকন ভ্যারিয়েবল
-            
-            if (txn.status === 'pending' || txn.status === 'processing') {
-                statusClass = 'status-pending-pro';
-                statusIcon = '<i class="fas fa-clock"></i>';
-            } else if (txn.status === 'success') {
-                statusClass = 'status-success-pro';
-                statusIcon = '<i class="fas fa-check-circle"></i>';
-            } else if (txn.status === 'cancelled') {
-                statusClass = 'status-cancelled-pro';
-                statusIcon = '<i class="fas fa-times-circle"></i>';
-            }
+        // সার্চ না করলে তবেই Podium (Top 3) দেখাবে
+        if (topUsers.length >= 3 && searchTerm === '') {
+            const u1 = topUsers[0], u2 = topUsers[1], u3 = topUsers[2];
+            let label = sortBy === 'exp' ? 'EXP' : (sortBy === 'totalKills' ? 'Kills' : 'Wins');
 
-            // Date format processing
-            const d = new Date(txn.date);
-            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-            const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-            txnItem.innerHTML = `
-                <div class="txn-left-pro">
-                    <div class="txn-icon-pro" style="${iconStyle}">
-                        ${iconHtml}
-                    </div>
-                    <div class="txn-info-pro">
-                        <div class="txn-title-pro">${txn.title || txn.type.toUpperCase()}</div>
-                        <div class="txn-date-pro"><i class="far fa-clock"></i> ${dateStr}, ${timeStr}</div>
+            html += `
+            <div class="podium-wrapper">
+                <div class="podium-item podium-rank-2">
+                    <div class="podium-name">${u2.username}</div>
+                    <div class="podium-avatar">${getAvatarHTML(u2, 'fas fa-medal')}</div>
+                    <div class="podium-box">
+                        <div style="font-size:24px; opacity:0.5; margin-bottom:5px;">2</div>
+                        <div class="podium-score">${u2[sortBy]} ${label}</div>
                     </div>
                 </div>
-                                <div class="txn-right-pro">
-                    <div class="txn-amount-pro" style="color: ${amountColor};">${amountSign}৳${parseFloat(txn.amount).toFixed(2)}</div>
-                    <div class="txn-status-badge ${statusClass}">${statusIcon} ${statusText}</div>
+                <div class="podium-item podium-rank-1" style="z-index: 5;">
+                    <div class="podium-name" style="color:#fbbf24; font-size:14px;">${u1.username}</div>
+                    <div class="podium-avatar">${getAvatarHTML(u1, 'fas fa-crown')}</div>
+                    <div class="podium-box">
+                        <div style="font-size:32px; opacity:0.5; margin-bottom:5px;">1</div>
+                        <div class="podium-score">${u1[sortBy]} ${label}</div>
+                    </div>
                 </div>
-
-            `;
-            
-            // Fix text color for dark mode "match_entry"
-            if (txn.type === 'match_entry' && document.body.classList.contains('dark-mode')) {
-                txnItem.querySelector('.txn-amount-pro').style.color = 'var(--text-dark)';
-            }
-            
-            container.appendChild(txnItem);
-        });
-    });
-}
-
-function showNoHistory(container) {
-    let msg = 'No records found in this section.';
-    if(currentHistoryTab === 'deposit') msg = 'You haven\'t made any deposits yet.';
-    if(currentHistoryTab === 'match_entry') msg = 'You haven\'t played any matches yet.';
-    if(currentHistoryTab === 'withdraw') msg = 'You haven\'t made any withdrawals yet.';
-
-    container.innerHTML = `
-        <div style="text-align:center; padding: 60px 20px; background: var(--card-light); border-radius: 20px; border: 1px dashed #cbd5e1; margin-top: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-            <div style="width: 80px; height: 80px; background: rgba(148, 163, 184, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                <i class="fas fa-file-invoice" style="font-size: 35px; color: var(--gray);"></i>
-            </div>
-            <h3 style="font-size: 18px; font-weight: 800; color: var(--text-light); margin-bottom: 8px;">No Data Available</h3>
-            <p style="font-size: 13px; color: var(--gray); font-weight: 500;">${msg}</p>
-        </div>
-    `;
-    
-    // Dark mode check for the empty state
-    if(document.body.classList.contains('dark-mode')){
-        container.querySelectorAll('[style*="var(--card-light)"]').forEach(el => el.style.background = 'var(--card-dark)');
-        container.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
-    }
-}
-
-        
-// 1. Redeem History লোড করার ফাংশন
-function loadRedeemHistory() {
-    const container = document.getElementById('redeemHistoryList');
-    container.innerHTML = '<div style="text-align:center; padding:10px; font-size:12px;">Loading...</div>';
-
-    database.ref('transactions').orderByChild('userId').equalTo(appState.userId).once('value').then(snap => {
-        const data = snap.val();
-        container.innerHTML = '';
-        
-        if(!data) {
-            container.innerHTML = '<div style="text-align:center; padding:10px; color:var(--gray); font-size:12px;">No code redeemed yet</div>';
-            return;
-        }
-
-        // শুধুমাত্র 'Redeem Code' মেথডগুলো ফিল্টার করা হচ্ছে
-        const redemptions = Object.values(data)
-            .filter(t => t.method === 'Redeem Code')
-            .reverse();
-
-        if (redemptions.length === 0) {
-            container.innerHTML = '<div style="text-align:center; padding:10px; color:var(--gray); font-size:12px;">No code redeemed yet</div>';
-            return;
-        }
-
-        redemptions.forEach(txn => {
-            const div = document.createElement('div');
-            div.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--light); margin-bottom:8px; border-radius:8px; border:1px solid #e5e7eb;';
-            if(document.body.classList.contains('dark-mode')) {
-                div.style.background = 'var(--card-dark)';
-                div.style.borderColor = '#374151';
-            }
-
-            const date = new Date(txn.date).toLocaleDateString();
-            
-            div.innerHTML = `
-                <div>
-                    <div style="font-weight:600; font-size:13px; color:var(--primary);">${txn.title.replace('Redeemed: ', '')}</div>
-                    <div style="font-size:11px; color:var(--gray);">${date}</div>
+                <div class="podium-item podium-rank-3">
+                    <div class="podium-name">${u3.username}</div>
+                    <div class="podium-avatar">${getAvatarHTML(u3, 'fas fa-award')}</div>
+                    <div class="podium-box">
+                        <div style="font-size:20px; opacity:0.5; margin-bottom:5px;">3</div>
+                        <div class="podium-score">${u3[sortBy]} ${label}</div>
+                    </div>
                 </div>
-                <div style="font-weight:700; color:var(--success); font-size:14px;">+৳${txn.amount}</div>
-            `;
-            container.appendChild(div);
-        });
-    });
-}
-
-redeemBtn.addEventListener('click', () => {
-    redeemModal.classList.add('active');
-    loadRedeemHistory(); // এই লাইনটি নতুন যোগ করা হয়েছে
-});
-
-        // ১. পেমেন্ট মেথড লোড করার ফাংশন
-function loadDepositMethodsPage() {
-    resetDepositPage();
-    const container = document.getElementById('paymentMethodsList');
-    
-    // লোডিং স্টাইল আপডেট
-    container.innerHTML = '<div style="padding:10px; color:var(--gray); font-size:12px;">Loading...</div>';
-    
-    database.ref('payment_settings/deposit').once('value').then(snapshot => {
-        container.innerHTML = '';
-        const methods = snapshot.val();
-        
-        if (!methods) {
-            container.innerHTML = '<div class="no-data" style="margin:auto;">No methods found</div>';
-            return;
+            </div>`;
         }
 
-        Object.keys(methods).forEach(key => {
-            const method = methods[key];
+        // List System (Rank 4 to 50, অথবা সার্চ করলে সবাই)
+        html += '<div style="display:flex; flex-direction:column; gap:12px;">';
+        
+        let startIndex = (topUsers.length >= 3 && searchTerm === '') ? 3 : 0;
+
+        for(let i = startIndex; i < topUsers.length; i++) {
+            const user = topUsers[i];
+            const rankNum = (searchTerm === '') ? i + 1 : usersArray.findIndex(u => u.id === user.id) + 1;
+            const rankInfo = getRankInfo(user.exp); 
             
-            // আইকন এবং কালার লজিক
-            let icon = '<i class="fas fa-wallet pm-icon-row" style="color:var(--gray);"></i>';
-            let color = 'var(--text-light)';
-            const nameLower = method.name.toLowerCase();
-            
-            if(nameLower.includes('bkash')) { 
-                color = '#e2136e'; 
-                icon = '<i class="fas fa-money-bill-wave pm-icon-row" style="color:#e2136e;"></i>'; 
+            let rowStyle = "background: var(--card-light); border: 1px solid #e5e7eb;";
+            if (document.body.classList.contains('dark-mode')) {
+                rowStyle = "background: var(--card-dark); border: 1px solid #334155; box-shadow: 0 4px 10px rgba(0,0,0,0.2);";
             }
-            if(nameLower.includes('nagad')) { 
-                color = '#ec1c24'; 
-                icon = '<i class="fas fa-mobile-alt pm-icon-row" style="color:#ec1c24;"></i>'; 
-            }
-            if(nameLower.includes('rocket')) { 
-                color = '#8c3494'; 
-                icon = '<i class="fas fa-rocket pm-icon-row" style="color:#8c3494;"></i>'; 
+            if (user.id === appState.userId) {
+                rowStyle = "background: rgba(59, 130, 246, 0.05); border: 1px solid var(--primary); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.1);";
             }
 
-            const div = document.createElement('div');
-            // এখানে নতুন ক্লাস ব্যবহার করা হয়েছে
-            div.className = 'payment-method-card-row';
-            
-            div.innerHTML = `
-                ${icon}
-                <div style="font-weight:700; font-size:13px; color:${color}; text-align:center;">${method.name}</div>
-                <div style="font-size:10px; color:var(--gray);">Min: ${method.minDeposit}</div>
+            let scoreText = '';
+            if(sortBy === 'exp') scoreText = `<span style="color:var(--primary); font-size:18px;">${user.exp}</span> <span style="font-size:10px; color:var(--gray);">EXP</span>`;
+            if(sortBy === 'totalKills') scoreText = `<i class="fas fa-crosshairs" style="color:#ef4444; font-size:12px;"></i> <span style="font-size:18px;">${user.totalKills}</span>`;
+            if(sortBy === 'totalWins') scoreText = `<i class="fas fa-trophy" style="color:#fbbf24; font-size:12px;"></i> <span style="font-size:18px;">${user.totalWins}</span>`;
+
+            // Tier Progress Bar
+            let progress = 100;
+            if(!rankInfo.isMax) {
+                progress = ((user.exp - rankInfo.prev) / (rankInfo.next - rankInfo.prev)) * 100;
+                progress = Math.max(0, Math.min(100, progress));
+            }
+
+            html += `
+                <div style="display: flex; align-items: center; padding: 16px; border-radius: 16px; ${rowStyle} transition: transform 0.2s;">
+                    <div style="width: 30px; font-weight: 900; color: var(--gray); font-size: 16px;">#${rankNum}</div>
+                    
+                    <div style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid ${rankInfo.color}; overflow: hidden; margin-left: 5px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.05);">
+                        ${getAvatarHTML(user, 'fas fa-user')}
+                    </div>
+
+                    <div style="flex: 1; overflow: hidden; margin-left: 12px;">
+                        <div style="font-weight: 800; font-size: 15px; color: var(--text-light); display: flex; align-items: center; gap: 8px;">
+                            ${user.username} 
+                            ${user.id === appState.userId ? '<span style="font-size:9px; background:var(--primary); color:white; padding:3px 8px; border-radius:12px; font-weight:900;">YOU</span>' : ''}
+                        </div>
+                        <div style="font-size: 11px; color: ${rankInfo.color}; font-weight:800; margin-top: 4px; display:flex; align-items:center; gap:5px;">
+                            <i class="fas ${rankInfo.icon}"></i> ${rankInfo.name}
+                        </div>
+                        <div class="lb-list-progress-bg">
+                            <div class="lb-list-progress-fill" style="width: ${progress}%; background: ${rankInfo.color};"></div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; font-weight: 900;">
+                        ${scoreText}
+                    </div>
+                </div>
             `;
-            
-            div.onclick = () => selectDepositMethodPage(method);
-            container.appendChild(div);
-        });
+        }
+
+        html += '</div>';
+        leaderboardContent.innerHTML = html;
+        
+        // Dark mode text fix
+        if (document.body.classList.contains('dark-mode')) {
+            document.querySelectorAll('#leaderboardContent [style*="color: var(--text-light)"]').forEach(el => {
+                el.style.color = 'var(--text-dark)';
+            });
+        }
+    }).catch(err => {
+        console.error(err);
+        leaderboardContent.innerHTML = `<div class="no-data"><p style="color:var(--danger);"><i class="fas fa-exclamation-triangle"></i> Error loading data</p></div>`;
+    });
+}
+
+// Share Feature
+function shareMyRank() {
+    const footer = document.getElementById('myRankFooter');
+    const rank = footer.getAttribute('data-rank') || '--';
+    const score = footer.getAttribute('data-score') || '0';
+    
+    // Telegram Bot এর লিংকের জায়গায় আপনার আসল লিংক বসাতে পারেন
+    const text = `🏆 I am currently Rank #${rank} in Battle Royale Tournament with ${score}! Think you can beat me?\n\n🎮 Play Now: https://t.me/de1stmo_bot/app?startapp=${appState.userId}`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'My Tournament Rank',
+            text: text
+        }).catch(err => console.log('Share failed', err));
+    } else {
+        copyToClipboard(text);
+        alert("Your rank info has been copied! Share it with your friends.");
+    }
+}
+
+
+
+// --- LUCKY DRAW USER LOGIC ---
+
+const luckyDrawMenuBtn = document.getElementById('luckyDrawMenuBtn');
+
+if(luckyDrawMenuBtn) {
+    luckyDrawMenuBtn.addEventListener('click', () => {
+        // মডালের বদলে সেকশন ওপেন হবে
+        switchSection('luckydraw'); 
+        loadLuckyDrawDetails();
     });
 }
 
 
-// ২. মেথড সিলেক্ট করার ফাংশন
-function selectDepositMethodPage(method) {
-    // UI পরিবর্তন (Step 1 Hide, Step 2 Show)
-    document.getElementById('depositStep1').style.display = 'none';
-    document.getElementById('depositStep2').style.display = 'block';
+
+// Ensure the function signature accepts drawId
+window.joinLuckyDraw = function(drawId, feeAmount, limitAmount, fixedQty = null) {
+    if(!appState.userId) return alert("User not loaded properly.");
+
+    const qtyInput = document.getElementById(`ticketQty_${drawId}`);
+    let qty = fixedQty !== null ? fixedQty : (parseInt(qtyInput.value) || 1);
     
-    // ডাটা সেট করা
-    document.getElementById('targetNumber').textContent = method.number;
-    document.getElementById('minDepDisplay').textContent = method.minDeposit;
-    document.getElementById('selectedMethodNamePage').value = method.name;
-    
-    // ইনপুট ক্লিয়ার করা
-    document.getElementById('depositAmountPage').value = '';
-    document.getElementById('depositTrxIDPage').value = '';
-}
+    if(qty < 1) return alert("Please enter a valid ticket quantity!");
 
-// ৩. রিসেট বা ব্যাক ফাংশন
-function resetDepositPage() {
-    document.getElementById('depositStep1').style.display = 'block';
-    document.getElementById('depositStep2').style.display = 'none';
-}
+    let totalFee = feeAmount * qty;
 
-// ৪. সাবমিট ফাংশন (Auto-Deposit লজিক সহ)
-function submitDepositPage() {
-    const amount = parseFloat(document.getElementById('depositAmountPage').value);
-    const trxId = document.getElementById('depositTrxIDPage').value.trim().toUpperCase();
-    const method = document.getElementById('selectedMethodNamePage').value;
-    const minAmount = parseFloat(document.getElementById('minDepDisplay').textContent);
+    const generateUniqueTickets = (count) => {
+        let tkts = [];
+        for(let i=0; i<count; i++) tkts.push('LD-' + Math.random().toString(36).substring(2, 8).toUpperCase());
+        return tkts;
+    };
 
-    if (!amount || amount < minAmount) {
-        alert(`Minimum deposit amount is ৳${minAmount}`);
-        return;
-    }
-    if (trxId.length < 5) {
-        alert("Please enter a valid Transaction ID");
-        return;
-    }
+    database.ref(`luckyDraw/active/${drawId}`).once('value').then(dSnap => {
+        const drawData = dSnap.val();
+        if(!drawData) return alert("Draw ended or invalid!");
+        
+        const participants = drawData.participants || {};
+        
+        let totalTicketsSold = 0;
+        Object.values(participants).forEach(p => { totalTicketsSold += (p.tickets || 1); });
+        
+        if(limitAmount > 0 && (totalTicketsSold + qty) > limitAmount) {
+            return alert(`Sorry! Only ${limitAmount - totalTicketsSold} tickets left.`);
+        }
 
-    const submitBtn = document.querySelector('#depositFormPage button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        database.ref(`users/${appState.userId}`).once('value').then(snap => {
+            const user = snap.val() || {};
+            const currentBal = parseFloat(user.balance) || 0;
 
-    // প্রথমে অ্যাডমিন প্যানেলের Auto-Deposit সেটিং চেক করা হচ্ছে
-    database.ref('settings/autoDeposit').once('value').then(settingSnap => {
-        const isAutoDepositEnabled = settingSnap.val() === true;
-
-        // এরপর TrxID ডুপ্লিকেট চেক
-        return database.ref('transactions').orderByChild('trxId').equalTo(trxId).once('value')
-        .then(snapshot => {
-            if (snapshot.exists()) {
-                throw new Error("This TrxID has already been used!");
+            if (currentBal < totalFee) {
+                return alert(`Insufficient Balance! You need ৳${totalFee} to buy ${qty} tickets.`);
             }
-            
-            const newTxnKey = database.ref('transactions').push().key;
-            
-            // অটো-ডিপোজিট অন থাকলে 'processing' স্ট্যাটাস হবে (SMS forwarder এর জন্য), অফ থাকলে রেগুলার 'pending'
-            const initialStatus = isAutoDepositEnabled ? 'processing' : 'pending';
 
-            const transactionData = {
-                userId: appState.userId,
-                userName: appState.currentUser.firstName,
-                type: 'deposit',
-                amount: amount,
-                method: method,
-                trxId: trxId,
-                date: Date.now(),
-                status: initialStatus, 
-                title: `Deposit: ${method}`
+            let updates = {};
+            
+if (totalFee > 0) {
+    const newBalance = currentBal - totalFee;
+    updates[`users/${appState.userId}/balance`] = newBalance;
+    
+    // --- 🚨 NEW LOGIC: Adjust Winning Balance ---
+    let currentWinning = parseFloat(user.winningBalance) || 0;
+    if (currentWinning > newBalance) {
+        updates[`users/${appState.userId}/winningBalance`] = newBalance;
+    }
+    // ------------------------------------------
+
+    
+
+                const txnKey = database.ref('transactions').push().key;
+                updates[`transactions/${txnKey}`] = {
+                    userId: appState.userId,
+                    type: 'match_entry', 
+                    amount: totalFee,
+                    date: Date.now(),
+                    status: 'success',
+                    method: 'Lucky Draw Ticket',
+                    title: `Bought ${qty} Tickets`
+                };
+            }
+
+            const userEntry = participants[appState.userId] || {};
+            const previousOwnTickets = userEntry.ticketNumbers || [];
+            const previousPaid = userEntry.paidTickets || userEntry.tickets || 0;
+            const claimedFree = userEntry.claimedFreeTickets || 0;
+
+            const newTicketNumbers = generateUniqueTickets(qty);
+            const combinedTickets = previousOwnTickets.concat(newTicketNumbers);
+
+                        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}`] = {
+                ...userEntry, // 🟢 এই লাইনের কারণে ইউজারের আগের ক্লেইম রেকর্ড আর মুছে যাবে না
+                name: appState.currentUser.firstName + ' ' + (appState.currentUser.lastName || ''),
+                username: appState.currentUser.username || 'N/A',
+                timestamp: Date.now(),
+                tickets: combinedTickets.length,
+                paidTickets: previousPaid + qty,
+                ticketNumbers: combinedTickets
             };
 
-            return database.ref(`transactions/${newTxnKey}`).set(transactionData).then(() => isAutoDepositEnabled);
+
+            return database.ref().update(updates).then(() => {
+                return { generated: newTicketNumbers };
+            });
+        })
+        .then((res) => {
+            if (!res) return;
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+            }
+            alert(`Success! You bought ${qty} ticket(s).\nTickets: ${res.generated.join(', ')}`);
+        })
+        .catch(err => {
+            if(err) alert("Error: " + err.message);
         });
-    })
-    .then((isAutoDepositEnabled) => {
-        if (isAutoDepositEnabled) {
-            alert("Auto-Verification in progress!\nআপনার ট্রানজেকশনটি চেক করা হচ্ছে, কিছুক্ষণের মধ্যেই ব্যালেন্স অ্যাড হয়ে যাবে।");
-        } else {
-            alert("Request Submitted Successfully!\nঅ্যাডমিন চেক করে ব্যালেন্স অ্যাড করে দিবে।");
-        }
-        switchSection('profile');
-        loadTransactions();
-    })
-    .catch(error => {
-        alert(error.message);
-    })
-    .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
     });
 }
 
 
-                // --- WITHDRAWAL FUNCTIONS ---
+window.claimFreeLdTickets = function(drawId, offerId, offerBuy, offerGet) {
+    const btn = event.currentTarget;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Claiming...';
+    btn.disabled = true;
 
-// ১. মেথড লোড করার ফাংশন
+    database.ref(`luckyDraw/active/${drawId}`).once('value').then(snap => {
+        const drawData = snap.val();
+        if(!drawData) throw new Error("Draw not found!");
 
-// ১. মেথড লোড করার ফাংশন
-function loadWithdrawMethodsPage() {
-    document.getElementById('withdrawInputArea').style.display = 'none';
-    document.getElementById('withdrawFormPage').reset();
+        const participants = drawData.participants || {};
+        const userEntry = participants[appState.userId];
+        if(!userEntry) throw new Error("No purchase found!");
+
+                let paidTkts = userEntry.paidTickets || userEntry.tickets || 0;
+        let claimedForThisOffer = userEntry.claimedOffers && userEntry.claimedOffers[offerId] ? userEntry.claimedOffers[offerId] : 0;
+        
+        // One-time Claim Logic Security
+        if (claimedForThisOffer > 0) throw new Error("You have already claimed this offer!");
+        
+        let eligibleFree = (paidTkts >= offerBuy) ? offerGet : 0;
+        let pendingFree = eligibleFree - claimedForThisOffer;
+
+
+        if (pendingFree <= 0) throw new Error("No free tickets available to claim for this offer!");
+
+        let totalTicketsSold = 0;
+        Object.values(participants).forEach(p => { totalTicketsSold += (p.tickets || 1); });
+        
+        let availableSlots = drawData.limit > 0 ? (drawData.limit - totalTicketsSold) : pendingFree;
+        let ticketsToClaim = Math.min(pendingFree, availableSlots);
+
+        if(ticketsToClaim <= 0) {
+            throw new Error("Sorry, no more slots available in this draw!");
+        }
+
+        const generateUniqueTickets = (count) => {
+            let tkts = [];
+            for(let i=0; i<count; i++) tkts.push('LD-' + Math.random().toString(36).substring(2, 8).toUpperCase());
+            return tkts;
+        };
+
+        const newFreeTickets = generateUniqueTickets(ticketsToClaim);
+        const combinedTickets = (userEntry.ticketNumbers || []).concat(newFreeTickets);
+
+        let updates = {};
+        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}/tickets`] = combinedTickets.length;
+        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}/claimedOffers/${offerId}`] = claimedForThisOffer + ticketsToClaim;
+        updates[`luckyDraw/active/${drawId}/participants/${appState.userId}/ticketNumbers`] = combinedTickets;
+
+        return database.ref().update(updates).then(() => {
+            return { generated: newFreeTickets, count: ticketsToClaim, pendingLeft: pendingFree - ticketsToClaim };
+        });
+    }).then((res) => {
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+            window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+        }
+        let msg = `🎉 Success! You claimed ${res.count} FREE ticket(s)!\nTickets: ${res.generated.join(', ')}`;
+        if(res.pendingLeft > 0) msg += `\n\n(Note: ${res.pendingLeft} free ticket(s) lost due to Draw Limit reached.)`;
+        
+        alert(msg);
+    }).catch(err => {
+        alert(err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+
+
+// --- ট্যাব সুইচ করার ফাংশন ---
+window.switchLdTab = function(tab) {
+    // ট্যাবগুলোর অ্যাক্টিভ ক্লাস আপডেট
+    document.getElementById('ldTab_active').classList.toggle('active', tab === 'active');
+    document.getElementById('ldTab_mytickets').classList.toggle('active', tab === 'mytickets');
+    document.getElementById('ldTab_history').classList.toggle('active', tab === 'history');
     
-    const winBal = appState.currentUser.winningBalance || 0;
-    document.getElementById('cardWinningBalance').textContent = winBal.toFixed(2);
+    // কন্টেন্টগুলোর ভিজিবিলিটি আপডেট
+    document.getElementById('ldUserContent').style.display = tab === 'active' ? 'block' : 'none';
+    document.getElementById('ldMyTicketsContent').style.display = tab === 'mytickets' ? 'block' : 'none';
+    document.getElementById('ldHistoryContent').style.display = tab === 'history' ? 'block' : 'none';
+    
+    // ট্যাবের উপর ভিত্তি করে ডাটা লোড
+    if(tab === 'active') {
+        loadLuckyDrawDetails();
+    } else if (tab === 'mytickets') {
+        loadMyTickets();
+    } else if (tab === 'history') {
+        loadLuckyDrawHistory();
+    }
+}
 
-    const container = document.getElementById('withdrawMethodsGrid');
-    container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 20px;"><i class="fas fa-spinner fa-spin" style="color:#9333ea; font-size:24px;"></i></div>';
 
-    database.ref('settings/paymentLogos').once('value').then(logoSnap => {
-        const logos = logoSnap.val() || {};
+window.loadMyTickets = function() {
+    const container = document.getElementById('ldMyTicketsContent');
+    container.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-spinner fa-spin" style="font-size:30px; color:var(--primary);"></i><p style="margin-top:10px;">Loading your tickets...</p></div>';
 
-        database.ref('payment_settings/withdraw').once('value').then(snapshot => {
+    database.ref('luckyDraw/active').once('value').then(snap => {
+        const draws = snap.val() || {};
+        container.innerHTML = '';
+        let hasTickets = false;
+
+        Object.keys(draws).forEach(drawId => {
+            const draw = draws[drawId];
+            const userEntry = draw.participants ? draw.participants[appState.userId] : null;
+
+            if (userEntry && userEntry.tickets > 0) {
+                hasTickets = true;
+                let tktsHtml = userEntry.ticketNumbers.map(t =>
+    `<div class="ld-ticket-stub">
+        <i class="fas fa-star" style="color: rgba(251, 191, 36, 0.5); font-size: 10px;"></i> 
+        ${t}
+    </div>`
+).join('');
+
+
+
+                container.innerHTML += `
+                    <div style="background: var(--card-light); border-radius: 16px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px dashed rgba(16, 185, 129, 0.3); padding-bottom: 10px;">
+                            <div>
+                                <div style="font-size: 10px; color: var(--primary); font-weight: 800; text-transform: uppercase;">Mega Draw Ticket Vault</div>
+                                <div style="font-size: 15px; font-weight: 800; color: var(--text-light);">${draw.title}</div>
+                            </div>
+                            <div style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 6px 12px; border-radius: 12px; font-weight: 900; font-size: 11px; text-align: center;">
+                                TOTAL<br><span style="font-size: 16px;">${userEntry.tickets}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 5px;">
+                            ${tktsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        if (!hasTickets) {
+            container.innerHTML = `
+                <div style="text-align:center; padding: 50px 20px;">
+                    <i class="fas fa-ticket-alt" style="font-size:50px; opacity:0.2; color:var(--text-light); margin-bottom:15px;"></i>
+                    <h3 style="color:var(--text-light); font-size:18px;">No Tickets Found</h3>
+                    <p style="color:var(--gray); font-size:13px; margin-top:5px;">You haven't bought any tickets for active draws.</p>
+                    <button class="join-btn" onclick="switchLdTab('active')" style="margin-top: 15px;">Buy Tickets</button>
+                </div>`;
+        }
+
+        // Dark mode support
+        if(document.body.classList.contains('dark-mode')) {
+            container.querySelectorAll('[style*="var(--card-light)"]').forEach(el => el.style.background = 'var(--card-dark)');
+            container.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+        }
+    });
+}
+
+
+
+// --- LUCKY DRAW USER LOGIC (ADVANCED UI) ---
+function loadLuckyDrawDetails() {
+    const content = document.getElementById('ldUserContent');
+    
+    database.ref('luckyDraw/active').on('value', snap => {
+        const activeDraws = snap.val() || {};
+        content.innerHTML = '';
+        
+        if (Object.keys(activeDraws).length === 0) {
+            content.innerHTML = `
+                <div style="padding: 50px 20px; text-align: center; animation: fadeIn 0.5s;">
+                    <div style="width: 100px; height: 100px; background: rgba(59, 130, 246, 0.05); border: 1px dashed rgba(59, 130, 246, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                        <i class="fas fa-box-open" style="font-size: 45px; color: var(--primary); opacity: 0.8;"></i>
+                    </div>
+                    <h3 style="color: var(--text-light); font-size: 22px; font-weight: 800; margin-bottom: 8px;">No Event Live</h3>
+                    <p style="font-size: 14px; color: var(--gray); max-width: 250px; margin: 0 auto;">Keep an eye out! The next massive lucky draw is coming soon.</p>
+                </div>
+            `;
+            if(document.body.classList.contains('dark-mode')) {
+                content.querySelectorAll('h3').forEach(el => el.style.color = 'var(--text-dark)');
+            }
+            return;
+        }
+
+        Object.keys(activeDraws).forEach(drawId => {
+            const draw = activeDraws[drawId];
+            const participants = draw.participants || {};
+            
+            let totalTicketsSold = 0;
+            Object.values(participants).forEach(p => { totalTicketsSold += (p.tickets || 1); });
+
+            const userEntry = participants[appState.userId];
+            const userOwnTickets = userEntry ? (userEntry.tickets || 0) : 0;
+            
+            let isFull = false;
+            let limitHtml = '';
+            if (draw.limit > 0) {
+                isFull = totalTicketsSold >= draw.limit;
+                const progress = Math.min((totalTicketsSold / draw.limit) * 100, 100);
+                limitHtml = `
+                    <div class="ld-progress-container">
+                        <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:700; color:#cbd5e1; margin-bottom:10px;">
+                            <span><i class="fas fa-fire" style="color:#ef4444; margin-right:5px;"></i>Tickets Claimed</span>
+                            <span style="color:#fcd34d;">${totalTicketsSold} / ${draw.limit}</span>
+                        </div>
+                        <div class="ld-progress-bg">
+                            <div class="ld-progress-fill" style="width: ${progress}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let timeHtml = '';
+            if (draw.endTimestamp && draw.endTimestamp > 0) {
+                timeHtml = `
+                    <div class="ld-badge-time">
+                        <i class="fas fa-clock"></i> 
+                        <span class="ld-countdown" data-end-time="${draw.endTimestamp}">Calculating...</span>
+                    </div>
+                `;
+            }
+
+            let ownTicketsDisplay = '';
+            if (userOwnTickets > 0) {
+                ownTicketsDisplay = `
+                <div style="background: rgba(16, 185, 129, 0.1); border-radius: 10px; padding: 10px 12px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="color: #10b981; font-weight: 700; font-size: 12px;">
+                        <i class="fas fa-check-circle"></i> You have ${userOwnTickets} ticket(s)
+                    </div>
+                    <button onclick="switchLdTab('mytickets')" style="background: transparent; color: #10b981; border: 1px solid #10b981; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 11px; cursor: pointer;">
+                        View
+                    </button>
+                </div>`;
+            }
+
+                           // --- Multiple Offers Banner & Claim Logic ---
+            let userPaidTickets = userEntry ? (userEntry.paidTickets || userEntry.tickets || 0) : 0;
+            let offerHtml = '';
+            let claimFreeHtml = ''; // আগের লজিকের জন্য ফাঁকা রাখছি
+
+            if (draw.offers) {
+                Object.keys(draw.offers).forEach(offerId => {
+                    const offer = draw.offers[offerId];
+                    // Track claims per specific offer
+                    let userClaimedForThisOffer = userEntry && userEntry.claimedOffers && userEntry.claimedOffers[offerId] ? userEntry.claimedOffers[offerId] : 0;
+                    
+                    // একবারে ক্লেইম করা হয়ে গেলে আর করা যাবে না (One-Time Limit)
+                    let hasClaimed = userClaimedForThisOffer > 0;
+                    let isMissionComplete = userPaidTickets >= offer.buy;
+                    let pendingFree = (isMissionComplete && !hasClaimed) ? offer.get : 0;
+                    
+                    // প্রোগ্রেস লজিক (ক্লেইম হয়ে গেলে ১০০% এ আটকে থাকবে)
+                    let currentCycleTickets = hasClaimed ? offer.buy : Math.min(userPaidTickets, offer.buy);
+                    let nextTarget = offer.buy - currentCycleTickets;
+                    let progressPct = (currentCycleTickets / offer.buy) * 100;
+
+                    let btnStyle, btnAttr, btnText, statusText;
+
+                    if (hasClaimed) {
+                        // ক্লেইম করা হয়ে গেছে
+                        btnStyle = 'background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); cursor: not-allowed;';
+                        btnAttr = 'disabled';
+                        btnText = '<i class="fas fa-check-double"></i> Claimed';
+                        statusText = '<span style="color: #10b981;"><i class="fas fa-check-circle"></i> Offer Already Claimed!</span>';
+                    } else if (isMissionComplete) {
+                        // মিশন কমপ্লিট, ক্লেইম করার জন্য প্রস্তুত
+                        btnStyle = 'background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4); cursor: pointer;';
+                        btnAttr = `onclick="claimFreeLdTickets('${drawId}', '${offerId}', ${offer.buy}, ${offer.get})"`;
+                        btnText = `<i class="fas fa-gift" style="animation: bounce 2s infinite;"></i> Claim ${offer.get}`;
+                        statusText = 'Mission Complete! Get your free ticket.';
+                    } else {
+                        // মিশন চলছে
+                        btnStyle = 'background: rgba(255, 255, 255, 0.1); color: #94a3b8; cursor: not-allowed;';
+                        btnAttr = 'disabled';
+                        btnText = '<i class="fas fa-lock"></i> Claim';
+                        statusText = `Buy <span style="color: white; font-weight: bold;">${nextTarget}</span> more to get <span style="color: #fbbf24; font-weight: bold;">${offer.get}</span> FREE!`;
+                    }
+
+                    // নতুন ডিজাইন
+                    offerHtml += `
+                    <div style="margin-top: 15px; background: rgba(245, 158, 11, 0.1); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 12px; padding: 12px; text-align: left; color: #fbbf24;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 800; font-size: 13px;">
+                                    BUY ${offer.buy} GET ${offer.get} FREE!
+                                </div>
+                                <div style="font-size: 11px; margin-top: 3px; color: #cbd5e1; font-weight: 600;">
+                                    ${statusText}
+                                </div>
+                            </div>
+                            
+                            <button ${btnAttr} style="border: none; padding: 8px 12px; border-radius: 8px; font-weight: 800; font-size: 11px; transition: 0.3s; text-transform: uppercase; display: flex; align-items: center; gap: 5px; ${btnStyle}">
+                                ${btnText}
+                            </button>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="offer-progress-bg" style="flex: 1; margin: 0; height: 6px; ${hasClaimed ? 'opacity: 0.5;' : ''}">
+                                <div class="offer-progress-fill" style="width: ${progressPct}%; ${hasClaimed ? 'background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.5);' : ''}"></div>
+                            </div>
+                            <div style="font-size: 10px; font-weight: bold; background: rgba(245, 158, 11, 0.2); padding: 2px 6px; border-radius: 8px; ${hasClaimed ? 'color: #10b981; background: rgba(16, 185, 129, 0.1);' : ''}">
+                                ${currentCycleTickets} / ${offer.buy}
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+                          
+
+
+
+            let actionHtml = '';
+            if (draw.endTimestamp && draw.endTimestamp < Date.now()) {
+                actionHtml = `${ownTicketsDisplay}<button class="ld-action-btn" disabled><i class="fas fa-lock"></i> Draw Closed</button>`;
+            } else if (isFull) {
+                actionHtml = `${ownTicketsDisplay}<button class="ld-action-btn" disabled><i class="fas fa-times-circle"></i> Sold Out</button>`;
+            } else {
+                if (draw.fee === 0) {
+                    if (userOwnTickets > 0) {
+                        actionHtml = `${ownTicketsDisplay}<button class="ld-action-btn" disabled style="background: rgba(16, 185, 129, 0.2); color: #34d399; box-shadow: none;"><i class="fas fa-check"></i> Free Ticket Claimed</button>`;
+                    } else {
+                        actionHtml = `<button class="ld-action-btn" onclick="joinLuckyDraw('${drawId}', 0, ${draw.limit}, 1)"><i class="fas fa-magic"></i> Claim Free Ticket</button>`;
+                    }
+                } else {
+                    const maxCanBuy = draw.limit > 0 ? (draw.limit - totalTicketsSold) : 50;
+                    actionHtml = `
+                        ${ownTicketsDisplay}
+                        <div class="ld-action-area">
+                            <div style="position: relative; flex: 0.8;">
+                                <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #1e1b4b; padding: 0 8px; font-size: 11px; color: #94a3b8; font-weight: 800; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">QTY</div>
+                                <input type="number" id="ticketQty_${drawId}" value="1" min="1" max="${maxCanBuy}" class="ld-input-qty">
+                            </div>
+                            <button class="ld-action-btn" style="flex: 2;" onclick="joinLuckyDraw('${drawId}', ${draw.fee}, ${draw.limit})">
+                                Buy For ৳${draw.fee} <span style="font-size:12px; opacity:0.8;">/ea</span>
+                            </button>
+                        </div>
+                        ${claimFreeHtml}
+                    `;
+                }
+            }
+
+            content.innerHTML += `
+                <div class="ld-premium-card">
+                    <i class="fas fa-gift" style="position: absolute; left: -30px; bottom: -30px; font-size: 180px; color: rgba(255,255,255,0.03); transform: rotate(-20deg); z-index: 0;"></i>
+                    ${timeHtml}
+                    <div class="ld-content-wrapper">
+                        <div style="font-size: 12px; color: #a78bfa; font-weight: 800; letter-spacing: 2px; margin-bottom: 5px;">MEGA DRAW</div>
+                        <div class="ld-title">${draw.title}</div>
+                        <div class="ld-prize-amount"><span class="ld-prize-currency">৳</span>${draw.prize}</div>
+                        
+                        ${limitHtml}
+                        ${actionHtml}
+                        ${offerHtml}
+                    </div>
+                </div>
+            `;
+        });
+    });
+}
+
+
+// --- LUCKY DRAW HISTORY (UPGRADED UI WITH TIME LIMIT) ---
+window.loadLuckyDrawHistory = function() {
+    const container = document.getElementById('ldHistoryContent');
+    container.innerHTML = '<div style="text-align:center; padding:50px 20px;"><i class="fas fa-circle-notch fa-spin" style="font-size:35px; color:var(--primary);"></i><p style="margin-top:15px; color:var(--gray); font-weight:600;">Loading History...</p></div>';
+
+    // প্রথমে অ্যাডমিনের সেট করা Time Limit ডাটাবেস থেকে নিয়ে আসা
+    database.ref('settings/claimTimeLimit').once('value').then(limitSnap => {
+        const claimTimeLimitHours = parseInt(limitSnap.val()) || 0;
+
+        database.ref('luckyDraw/history').once('value').then(snap => {
+            const historyData = snap.val();
             container.innerHTML = '';
-            const methods = snapshot.val();
-
-            if (!methods) {
-                container.innerHTML = '<div style="grid-column:1/-1; text-align:center; font-weight: 600; color: var(--gray);">No methods available</div>';
+            
+            if(!historyData) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 50px 20px;">
+                        <i class="fas fa-history" style="font-size:50px; opacity:0.2; color:var(--text-light); margin-bottom:15px;"></i>
+                        <h3 style="color:var(--text-light); font-size:18px;">No History Yet</h3>
+                    </div>`;
                 return;
             }
 
-            Object.keys(methods).forEach(key => {
-                const method = methods[key];
+            const draws = Object.keys(historyData).map(key => ({ id: key, ...historyData[key] })).sort((a,b) => b.endTimestamp - a.endTimestamp);
+
+            draws.forEach(d => {
+                let winnersSummaryHtml = '';
                 
-                let logoUrl = logos.default || '';
-                let color = 'var(--text-light)';
-                const nameLower = method.name.toLowerCase();
+                // টাইম লিমিট চেক করা (যদি এক্সপায়ার হয়ে যায়)
+                const isExpired = claimTimeLimitHours > 0 && Date.now() > (d.endTimestamp + claimTimeLimitHours * 3600000);
+                
+                if(d.winners) {
+                    const winnerCount = Object.keys(d.winners).length;
+                    
+                    let hasWon = false;
+                    Object.values(d.winners).forEach(w => {
+                        // যদি এক্সপায়ার না হয়ে থাকে এবং ক্লেইম না করে থাকে, তবেই নোটিফিকেশন ব্যাজ দেখাবে
+                        if(String(w.uid) === String(appState.userId) && w.claimed === false && !isExpired) {
+                            hasWon = true;
+                        }
+                    });
 
-                // Custom Colors based on network
-                if(nameLower.includes('bkash')) { color = '#e2136e'; logoUrl = logos.bkash || logoUrl; }
-                else if(nameLower.includes('nagad')) { color = '#ec1c24'; logoUrl = logos.nagad || logoUrl; }
-                else if(nameLower.includes('rocket')) { color = '#8c3494'; logoUrl = logos.rocket || logoUrl; }
-                else if(nameLower.includes('upay')) { color = '#2b75f1'; logoUrl = logos.upay || logoUrl; }
+                    let claimBadge = hasWon ? `<span style="position:absolute; top:-5px; right:-5px; width:12px; height:12px; background:var(--danger); border-radius:50%; border:2px solid var(--card-light); animation:pulse 1s infinite;"></span>` : '';
 
-                let iconHtml = logoUrl 
-                    ? `<img src="${logoUrl}" alt="${method.name}" style="width: 36px; height: 36px; object-fit: contain; margin-bottom: 2px;">`
-                    : `<div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.05); border-radius:10px; margin-bottom:2px;"><i class="fas fa-wallet" style="font-size: 20px; color:${color};"></i></div>`;
+                    winnersSummaryHtml = `
+                        <div style="background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3); padding: 15px; border-radius: 12px; text-align: center; position:relative;">
+                            ${claimBadge}
+                            <div style="font-size: 15px; font-weight: 800; color: var(--success); margin-bottom: 8px;">
+                                <i class="fas fa-gift"></i> ${winnerCount} Winners Selected
+                            </div>
+                            <button class="join-btn" style="background: var(--primary); padding: 8px 20px; font-size: 13px; border-radius: 8px; box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);" onclick="openLdWinnersModal('${d.id}', ${d.endTimestamp})">
+                                <i class="fas fa-users"></i> View Winners
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    winnersSummaryHtml = `<div style="text-align:center; padding: 15px; color:var(--gray); font-size:13px; background:rgba(0,0,0,0.03); border-radius:12px;">No winners were selected</div>`;
+                }
 
-                const div = document.createElement('div');
-                div.className = 'method-card-clean'; // Clean & Fast class
-                div.onclick = () => selectWithdrawMethodNew(method, div);
+                const drawNumText = d.drawNumber ? `DRAW #${d.drawNumber}` : 'PAST EVENT';
+                const dateStr = new Date(d.endTimestamp).toLocaleDateString([], {year: 'numeric', month: 'short', day: 'numeric'});
 
-                div.innerHTML = `
-                    ${iconHtml}
-                    <div class="mcc-name">${method.name}</div>
-                    <div class="mcc-limit">Min ৳${method.minWithdraw}</div>
+                container.innerHTML += `
+                    <div style="background: var(--card-light); border: 1px solid #e5e7eb; border-radius: 20px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 15px;">
+                            <div>
+                                <span style="display:inline-block; background: rgba(59, 130, 246, 0.1); color: var(--primary); padding: 5px 12px; border-radius: 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">${drawNumText}</span>
+                                <h4 style="font-size: 18px; font-weight: 800; color: var(--text-light);">${d.title}</h4>
+                            </div>
+                            <div style="text-align: right; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 12px;">
+                                <div style="font-size: 10px; color: var(--gray); text-transform:uppercase; font-weight:700;">Total Prize</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--warning);">৳${d.prize}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="font-size: 12px; color: var(--gray); margin-bottom: 15px; font-weight: 600; display:flex; align-items:center; gap:5px;">
+                            <i class="far fa-calendar-check"></i> Ended on ${dateStr}
+                        </div>
+
+                        <div>
+                            ${winnersSummaryHtml}
+                        </div>
+                    </div>
                 `;
-                container.appendChild(div);
             });
+
+            if(document.body.classList.contains('dark-mode')) {
+                container.querySelectorAll('[style*="var(--card-light)"]').forEach(el => { el.style.background = 'var(--card-dark)'; el.style.borderColor = '#374151'; });
+                container.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+            }
         });
     });
 }
 
-// ২. মেথড সিলেক্ট করার ফাংশন
-function selectWithdrawMethodNew(method, element) {
-    // Hardware Haptic (No Lag)
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
-    }
 
-    // সব বক্স থেকে selected ক্লাস সরানো
-    document.querySelectorAll('#withdrawMethodsGrid .method-card-clean').forEach(el => el.classList.remove('selected'));
-    
-    // ক্লিক করা বক্সে selected ক্লাস দেওয়া
-    element.classList.add('selected');
 
-    // ইনপুট এরিয়া দেখানো (No heavy animation, just opacity fade)
-    const inputArea = document.getElementById('withdrawInputArea');
-    inputArea.style.display = 'block';
-    
-    // ভ্যালু সেট করা
-    document.getElementById('selectedWithMethodName').value = method.name;
-    document.getElementById('minWithDisplay').textContent = method.minWithdraw;
 
-    // হালকা স্ক্রল
-    inputArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+// --- Open Winners Modal Logic ---
+window.openLdWinnersModal = function(historyKey, endTimestamp) {
+    const container = document.getElementById('ldWinnersListContent');
+    container.innerHTML = '<div style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin" style="font-size:30px; color:var(--primary);"></i><p style="margin-top:10px;">Loading Winners...</p></div>';
+    document.getElementById('ldWinnersModal').classList.add('active');
+
+    database.ref('settings/claimTimeLimit').once('value').then(limitSnap => {
+        const claimTimeLimitHours = parseInt(limitSnap.val()) || 0;
+        const isExpired = claimTimeLimitHours > 0 && Date.now() > (endTimestamp + claimTimeLimitHours * 3600000);
+
+        database.ref('luckyDraw/history/' + historyKey + '/winners').once('value').then(snap => {
+            const winners = snap.val() || {};
+            container.innerHTML = '';
+            
+            if(Object.keys(winners).length === 0) {
+                container.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--gray);">No winners data found</div>';
+                return;
+            }
+
+            let html = '';
+            Object.keys(winners).forEach(wKey => {
+                const w = winners[wKey];
+                const isCurrentUser = (String(w.uid) === String(appState.userId));
+                
+                let claimUI = '';
+                if (isCurrentUser) {
+                    if (w.claimed === false) {
+                        if (isExpired) {
+                            claimUI = `<span style="color:var(--danger); font-size: 11px; font-weight: 800;"><i class="fas fa-times-circle"></i> EXPIRED</span>`;
+                        } else {
+                            claimUI = `<button class="join-btn" style="background:linear-gradient(135deg, #f59e0b, #ea580c); padding: 4px 12px; font-size: 11px; border-radius: 6px; box-shadow: 0 0 10px rgba(245,158,11,0.5); animation: pulse 1.5s infinite;" onclick="claimLdPrize(this, '${historyKey}', '${wKey}', ${w.amount}, '${w.ticket}', ${endTimestamp})">CLAIM ৳${w.amount}</button>`;
+                        }
+                    } else {
+                        claimUI = `<span style="color:var(--gray); font-size: 11px; font-weight: 800;"><i class="fas fa-check-double"></i> CLAIMED</span>`;
+                    }
+                } else {
+                    claimUI = `<span style="color: var(--success); font-weight: 900; font-size: 16px;">৳${w.amount}</span>`;
+                }
+
+                html += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background: rgba(16, 185, 129, 0.08); padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; border-left: 4px solid var(--success); border-right: 1px solid rgba(16, 185, 129, 0.2); border-top: 1px solid rgba(16, 185, 129, 0.2); border-bottom: 1px solid rgba(16, 185, 129, 0.2);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 35px; height: 35px; background: rgba(251, 191, 36, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fbbf24; font-size: 16px;">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight: 800; color: var(--text-light); font-size: 15px;">${w.name} ${isCurrentUser ? '(YOU)' : ''}</div>
+                            <div style="font-size: 11px; color: var(--gray); font-family: monospace; margin-top: 2px;"><i class="fas fa-ticket-alt"></i> ${w.ticket}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right; display:flex; flex-direction:column; justify-content:center; align-items:flex-end; gap:3px;">
+                        ${claimUI}
+                    </div>
+                </div>`;
+            });
+            
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            if(document.body.classList.contains('dark-mode')) {
+                tempDiv.querySelectorAll('[style*="color: var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+            }
+            container.innerHTML = tempDiv.innerHTML;
+        });
+    });
+}
+
+
+
+// --- Claim Prize Logic ---
+window.claimLdPrize = function(btnElement, historyKey, winnerKey, amount, ticketNo, endTimestamp) {
+    const originalText = btnElement.innerHTML;
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btnElement.disabled = true;
+
+    // সিকিউরিটি চেক: ডাটাবেস থেকে টাইম লিমিট এনে ডাবল-চেক করা
+    database.ref('settings/claimTimeLimit').once('value').then(limitSnap => {
+        const claimTimeLimitHours = parseInt(limitSnap.val()) || 0;
+        
+        if (claimTimeLimitHours > 0 && Date.now() > (endTimestamp + claimTimeLimitHours * 3600000)) {
+            alert("Sorry, the claim period for this reward has expired!");
+            const parentDiv = btnElement.parentElement;
+            parentDiv.innerHTML = `<span style="color:var(--danger); font-size: 11px; font-weight: 800;"><i class="fas fa-times-circle"></i> EXPIRED</span>`;
+            return;
+        }
+
+        database.ref(`luckyDraw/history/${historyKey}/winners/${winnerKey}`).once('value').then(snap => {
+            const winnerData = snap.val();
+            
+            if (!winnerData || winnerData.claimed) {
+                alert("Prize already claimed or invalid!");
+                loadLuckyDrawHistory(); 
+                return;
+            }
+
+            database.ref('users/' + appState.userId).once('value').then(uSnap => {
+                const user = uSnap.val() || {};
+                const currentBalance = parseFloat(user.balance) || 0;
+                const currentWinning = parseFloat(user.winningBalance) || 0; 
+                
+                let updates = {};
+                updates[`luckyDraw/history/${historyKey}/winners/${winnerKey}/claimed`] = true;
+                updates[`users/${appState.userId}/balance`] = currentBalance + amount;
+                updates[`users/${appState.userId}/winningBalance`] = currentWinning + amount;
+                
+                const txnKey = database.ref('transactions').push().key;
+                updates[`transactions/${txnKey}`] = {
+                    userId: appState.userId,
+                    type: 'deposit',
+                    amount: amount,
+                    date: Date.now(),
+                    status: 'success',
+                    method: 'Lucky Draw Winner',
+                    title: `Claimed Draw Prize (Tkt: ${ticketNo})`
+                };
+
+                database.ref().update(updates).then(() => {
+                    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+                        window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+                    }
+                    alert(`Congratulations! You have successfully claimed ৳${amount}. It has been added to your Winning Balance.`);
+                    
+                    const parentDiv = btnElement.parentElement;
+                    parentDiv.innerHTML = `<span style="color:var(--gray); font-size: 11px; font-weight: 800;"><i class="fas fa-check-double"></i> CLAIMED</span>`;
+                    
+                    loadUserProfile(); 
+                });
+            });
+        }).catch(err => {
+            alert("Error claiming prize: " + err.message);
+            btnElement.innerHTML = originalText;
+            btnElement.disabled = false;
+        });
+    });
 }
 
 
 
 
-// ৩. রিসেট ফাংশন
-function resetWithdrawPage() {
-    document.getElementById('withdrawStep2').style.display = 'none';
-    document.getElementById('withdrawFormPage').reset();
-    document.querySelectorAll('.payment-method-card-row').forEach(el => el.classList.remove('selected'));
+
+// ক্যাটাগরি ডাটা (এখানে ইমেজগুলো ডাইনামিক হবে)
+let gameCategories = [
+    { id: 'br', title: 'BR MATCH', badge: 'BR', badgeClass: 'badge-br', img: 'https://i.ibb.co/VvzK2Bv/br.jpg' },
+    { id: 'squad', title: 'BR SURVIVAL / SQUAD', badge: 'SURVIVAL', badgeClass: 'badge-survival', img: 'https://i.ibb.co/zX9w4GZ/squad.jpg' },
+    { id: 'clash', title: 'CLASH SQUAD', badge: 'CS', badgeClass: 'badge-cs', img: 'https://i.ibb.co/9vD0H92/cs.jpg' },
+    { id: 'cs1v1', title: 'CS 1v1 2v2', badge: 'CS', badgeClass: 'badge-cs', img: 'https://i.ibb.co/Qpm0f43/1v1.jpg' },
+    { id: 'lone', title: 'LONE WOLF', badge: 'LONE', badgeClass: 'badge-lone', img: 'https://i.ibb.co/2kM9H9p/lone.jpg' },
+    { id: 'free', title: 'FREE MATCH', badge: 'FREE', badgeClass: 'badge-free', img: 'https://i.ibb.co/8NxtzQj/free.jpg' }
+];
+
+// ক্যাটাগরি গ্রিড রেন্ডার করার ফাংশন (Admin Settings থেকে ফটো নিবে)
+function renderCategoryGrid() {
+    const gridContainer = document.getElementById('categoryGridContainer');
+    if (!gridContainer) return;
+    
+    // ডাটাবেস থেকে ফটো লিঙ্ক নিয়ে আসা
+    database.ref('settings/categoryImages').once('value').then(snap => {
+        const adminPhotos = snap.val() || {};
+        
+        gridContainer.innerHTML = '';
+
+        gameCategories.forEach(cat => {
+            // যদি অ্যাডমিন নতুন ফটো দেয় তবে সেটা নিবে, না থাকলে ডিফল্ট ফটো নিবে
+            const displayImg = adminPhotos[cat.id] || cat.img;
+            
+            const matchCount = appState.matches.filter(m => m.category === cat.id && m.status !== 'ended').length;
+
+            const card = document.createElement('div');
+            card.className = 'cat-card';
+            card.onclick = () => openCategoryMatches(cat.id, cat.title);
+            
+            card.innerHTML = `
+                <div class="cat-img-wrapper">
+                    <div class="cat-badge ${cat.badgeClass}">${cat.badge}</div>
+                    <img src="${displayImg}" alt="${cat.title}" onerror="this.src='https://placehold.co/300x150/1e293b/FFF?text=${cat.badge}'">
+                </div>
+                <div class="cat-info">
+                    <div class="cat-title">${cat.title}</div>
+                    <div class="cat-count">${matchCount} matches found</div>
+                </div>
+            `;
+            gridContainer.appendChild(card);
+        });
+    });
 }
 
-// ৪. ফর্ম সাবমিট ফাংশন
 
-document.getElementById('withdrawFormPage').addEventListener('submit', function(e) {
-    e.preventDefault();
+// কার্ডে ক্লিক করলে ম্যাচ ওপেন হওয়ার ফাংশন
+function openCategoryMatches(categoryId, categoryTitle) {
+    appState.currentCategory = categoryId;
     
-    const amount = parseFloat(document.getElementById('withdrawAmountPage').value);
-    const number = document.getElementById('withdrawNumberPage').value.trim();
-    const method = document.getElementById('selectedWithMethodName').value;
-    const minAmount = parseFloat(document.getElementById('minWithDisplay').textContent);
+    document.getElementById('categoryGridView').style.display = 'none';
+    document.getElementById('matchListView').style.display = 'block';
+    document.getElementById('selectedCategoryTitle').innerText = categoryTitle;
     
-    // Winning Balance চেক করা
-    const winningBal = parseFloat(appState.currentUser.winningBalance) || 0;
+    // Hide Notice Banner and Premium Banner
+noticeBanner.style.display = 'none';
+const premiumBanner = document.getElementById('premiumBannerSlider');
+if (premiumBanner) premiumBanner.style.display = 'none';
 
-    if (!amount || amount < minAmount) {
-        alert(`Minimum withdrawal amount is ৳${minAmount}`);
+// Hide Main Header (Title & Theme Toggle)
+
+    
+    // Hide Main Header (Title & Theme Toggle)
+    const mainHeader = document.getElementById('mainHeader');
+    if (mainHeader) mainHeader.style.display = 'none';
+    
+    // শুধু সিলেক্ট করা ক্যাটাগরির ম্যাচ রেন্ডার হবে
+    renderMatches();
+}
+
+
+
+// ব্যাক বাটনের ফাংশন
+function backToCategories() {
+    document.getElementById('categoryGridView').style.display = 'block';
+    document.getElementById('matchListView').style.display = 'none';
+    appState.currentCategory = 'all'; 
+    
+    // Notice Banner আবার Show করা হলো 
+noticeBanner.style.display = 'flex';
+
+// Premium Banner আবার Show করা হলো (যদি ব্যানার থাকে)
+const premiumBanner = document.getElementById('premiumBannerSlider');
+const hasPremiumBanners = document.getElementById('bannerSlidesWrapper')?.children.length > 0;
+if (premiumBanner && hasPremiumBanners) premiumBanner.style.display = 'block';
+
+// Main Header আবার দেখানো হলো
+
+    const mainHeader = document.getElementById('mainHeader');
+    if (mainHeader) mainHeader.style.display = 'flex';
+    
+    // গ্রিড রিফ্রেশ করা যাতে লাইভ কাউন্ট আপডেট হয়
+    renderCategoryGrid();
+}
+
+
+
+
+
+let currentAdSettings = { link: "", reward: 5, timer: 15 };
+let isWatchingAd = false;
+
+
+// Load Ad Settings
+database.ref('settings/ads').on('value', snap => {
+    const data = snap.val() || {};
+    currentAdSettings.link = data.link || "";
+    currentAdSettings.reward = parseInt(data.reward) || 5;
+    currentAdSettings.timer = parseInt(data.timer) || 15;
+    
+    if(document.getElementById('adRewardDisplay')) {
+        document.getElementById('adRewardDisplay').textContent = currentAdSettings.reward;
+    }
+});
+
+// Event Listeners for Ads
+document.getElementById('freeCoinMenuBtn')?.addEventListener('click', () => {
+    // এখন আর লিংক চেক করার দরকার নেই, সরাসরি মডাল ওপেন হবে
+    document.getElementById('startAdBtn').style.display = 'block';
+    document.getElementById('adTimerSection').style.display = 'none';
+    document.getElementById('adsModal').classList.add('active');
+});
+
+document.getElementById('closeAdsModal')?.addEventListener('click', () => {
+    if(isWatchingAd) {
+        alert("Please wait for the ad to finish to get your reward!");
         return;
     }
+    document.getElementById('adsModal').classList.remove('active');
+});
+
+document.getElementById('startAdBtn')?.addEventListener('click', () => {
+    if(isWatchingAd) return;
     
-    // ১. মেইন ব্যালেন্স চেক
-    if (appState.walletBalance < amount) {
-        alert("Insufficient Main Balance!");
-        return;
-    }
-
-    // ২. উইনিং ব্যালেন্স চেক (সবচেয়ে জরুরি)
-    if (amount > winningBal) {
-        alert(`You can only withdraw your Winning Balance!\nAvailable for Withdraw: ৳${winningBal}`);
-        return;
-    }
-
-    if (number.length < 11) {
-        alert("Please enter a valid phone number");
-        return;
-    }
-
-    const submitBtn = document.querySelector('#withdrawFormPage button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-    // ব্যালেন্স এবং উইনিং ব্যালেন্স আপডেট
-    const newBalance = appState.walletBalance - amount;
-    const newWinning = winningBal - amount; 
+    isWatchingAd = true;
+    const btn = document.getElementById('startAdBtn');
+    const originalText = btn.innerHTML;
     
-    const updates = {};
-    const newTxnKey = database.ref('transactions').push().key;
+    // বাটনে লোডিং এনিমেশন দেওয়া
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading Ad...';
+    btn.disabled = true;
 
-    updates[`users/${appState.userId}/balance`] = newBalance;
-    updates[`users/${appState.userId}/winningBalance`] = newWinning; // নতুন লাইন
+    // Monetag Rewarded Interstitial SDK কল করা
+    if (typeof show_10639013 === 'function') {
+        show_10639013().then(() => {
+            // ইউজার অ্যাড সম্পূর্ণ দেখলে এই ফাংশন রান হবে এবং কয়েন দিয়ে দিবে
+            claimAdReward();
+            
+            // বাটন আগের অবস্থায় ফিরিয়ে আনা
+            isWatchingAd = false;
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }).catch(e => {
+            // ইউজার অ্যাড কেটে দিলে বা লোড না হলে
+            console.error("Ad Error:", e);
+            // alert("No ads available right now. Please try again later.");
+            
+            // বাটন রিস্টোর করা
+            isWatchingAd = false;
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        });
+    } else {
+        alert("Ads are not fully loaded yet. Please wait a moment or check your internet connection.");
+        isWatchingAd = false;
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+});
 
-    updates[`transactions/${newTxnKey}`] = {
-        userId: appState.userId,
-        userName: appState.currentUser.firstName,
-        type: 'withdraw',
-        amount: amount,
-        method: method,
-        number: number,
-        date: Date.now(),
-        status: 'pending',
-        title: `Withdraw: ${method}`
-    };
+function claimAdReward() {
+    // অ্যাডমিন প্যানেল থেকে সেট করা রিওয়ার্ড, অথবা ডিফল্ট 5
+    const rewardAmount = currentAdSettings.reward || 5; 
 
-    database.ref().update(updates)
-    .then(() => {
-        alert("Withdrawal Request Submitted Successfully!");
-        switchSection('profile'); 
-        loadTransactions(); 
-        loadUserProfile(); 
-    })
-    .catch(error => {
-        alert("Error: " + error.message);
-    })
-    .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+    database.ref('users/' + appState.userId).once('value').then(snap => {
+        const user = snap.val() || {};
+        const currentCoins = parseInt(user.coins) || 0;
+        const newCoins = currentCoins + rewardAmount;
+        
+        return database.ref(`users/${appState.userId}`).update({ coins: newCoins });
+    }).then(() => {
+        const timerSection = document.getElementById('adTimerSection');
+        const startBtn = document.getElementById('startAdBtn');
+        
+        // আগের অরিজিনাল HTML সেভ করে রাখা হচ্ছে যাতে মডাল ভাঙবে না
+        const originalHTML = timerSection.innerHTML; 
+
+        timerSection.style.display = 'block';
+        timerSection.innerHTML = `<div style="color: var(--success); font-weight: bold; font-size: 18px;"><i class="fas fa-check-circle"></i> +${rewardAmount} Coins Added!</div>`;
+        startBtn.style.display = 'none';
+        
+        // প্রোফাইলের কয়েন রিয়েল-টাইম আপডেট করা
+        if(document.getElementById('statCoins')) {
+            const current = parseInt(document.getElementById('statCoins').textContent) || 0;
+            document.getElementById('statCoins').textContent = current + rewardAmount;
+        }
+        
+        // ৩ সেকেন্ড পর মডাল অটোমেটিক বন্ধ হবে এবং সবকিছু রিসেট হবে
+        setTimeout(() => {
+            document.getElementById('adsModal').classList.remove('active');
+            
+            // রিসেট UI (পরবর্তীতে আবার অ্যাড দেখার জন্য)
+            startBtn.style.display = 'block';
+            timerSection.style.display = 'none';
+            timerSection.innerHTML = originalHTML; // অরিজিনাল ডিজাইন ফিরিয়ে আনা হলো
+        }, 3000);
+        
+    }).catch(err => {
+        alert("Error claiming reward: " + err.message);
+    });
+}
+
+
+function openMatchScoreboardModal(matchId) {
+    const match = appState.results.find(m => m.id === matchId);
+    if (!match) return;
+
+    const content = document.getElementById('matchScoreboardContent');
+    
+    // যদি অ্যাডমিন রেজাল্ট আপডেট না করে থাকে
+    if (!match.results || Object.keys(match.results).length === 0) {
+        content.innerHTML = `
+            <div class="no-data" style="padding: 30px;">
+                <i class="fas fa-clipboard-list" style="font-size:40px; margin-bottom:10px;"></i>
+                <p>Scoreboard is not updated yet by the admin.</p>
+            </div>
+        `;
+    } else {
+        let resultsArray = Object.values(match.results);
+        
+        // কে কত টাকা জিতেছে সেই অনুযায়ী বড় থেকে ছোট সর্ট করা, টাকা সমান হলে কিল অনুযায়ী সর্ট হবে
+        resultsArray.sort((a, b) => b.prize - a.prize || b.kills - a.kills);
+
+        let tableHTML = `
+            <div class="points-table-container">
+                <table class="points-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align:center;">Rank</th>
+                            <th style="text-align:left;">Player Info</th>
+                            <th style="text-align:center;">Kills</th>
+                            <th style="text-align:right;">Won (৳)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        resultsArray.forEach((player, index) => {
+            let prizeHtml = player.prize > 0 ? `<span style="color:var(--success); font-weight:bold;">৳${player.prize}</span>` : `<span style="color:var(--gray);">৳0</span>`;
+            let winBadge = player.isWin ? `<span style="font-size:9px; background:var(--warning); color:#000; padding:2px 5px; border-radius:4px; margin-left:5px; font-weight:bold;">Booyah</span>` : '';
+            let rankClass = index < 3 ? `rank-${index + 1}` : '';
+            
+            tableHTML += `
+                <tr>
+                    <td class="rank-cell ${rankClass}">#${index + 1}</td>
+                    <td style="text-align:left;">
+                        <div style="font-weight:700; color:var(--text-light); font-size:13px;">
+                            ${player.playerName} ${winBadge}
+                        </div>
+                    </td>
+                    <td style="font-weight:bold; color:var(--text-light); text-align:center;">${player.kills}</td>
+                    <td style="text-align:right;">${prizeHtml}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `</tbody></table></div>`;
+        content.innerHTML = tableHTML;
+        
+        // Dark mode color fix
+        if(document.body.classList.contains('dark-mode')) {
+            content.querySelectorAll('[style*="color:var(--text-light)"]').forEach(el => el.style.color = 'var(--text-dark)');
+        }
+    }
+    
+    document.getElementById('matchScoreboardModal').classList.add('active');
+}
+
+// --- DEVICE IDENTITY SYSTEM ---
+function getDeviceInfo() {
+    let deviceName = "Unknown Device";
+    let userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    
+    // Telegram Web App API থেকে প্ল্যাটফর্ম চেক করা
+    let tgPlatform = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.platform) ? window.Telegram.WebApp.platform : 'unknown';
+
+    if (tgPlatform === 'android' || /android/i.test(userAgent)) {
+        // Android এর User-Agent থেকে ডিভাইসের নির্দিষ্ট মডেল বের করার চেষ্টা
+        // সাধারণত লেখা থাকে: (Linux; Android 13; SM-G998B Build/...) বা (Linux; Android 12; Redmi Note 9 Pro)
+        let match = userAgent.match(/Android\s+[0-9\.]+\s*;\s*([^;)]+)\s*[;)]/i);
+        
+        if (match && match[1]) {
+            let model = match[1].trim();
+            // অনেক সময় Build/... লেখা থাকে, সেটা রিমুভ করা
+            model = model.split('Build')[0].trim();
+            
+            // যদি মডেল পাওয়া যায় এবং সেটা শুধু 'wv' না হয়
+            if (model && model.toLowerCase() !== 'wv' && model !== 'Android') {
+                deviceName = "Android (" + model + ")";
+            } else {
+                deviceName = "Android Device";
+            }
+        } else {
+            deviceName = "Android Device";
+        }
+    } else if (tgPlatform === 'ios' || /iPhone|iPad|iPod/i.test(userAgent)) {
+        // অ্যাপল নির্দিষ্ট মডেল দেয় না, তাই শুধু iPhone বা iPad বের করা যায়
+        if (/iPad/i.test(userAgent)) {
+            deviceName = "Apple iPad";
+        } else {
+            deviceName = "Apple iPhone";
+        }
+    } else if (tgPlatform === 'tdesktop' || tgPlatform === 'windows' || /Windows NT/i.test(userAgent)) {
+        deviceName = "Windows PC";
+    } else if (tgPlatform === 'macos' || /Macintosh|Mac OS X/i.test(userAgent)) {
+        deviceName = "Mac OS";
+    } else if (tgPlatform === 'web' || tgPlatform === 'weba') {
+        deviceName = "Web Browser";
+    }
+
+    // ইউনিক Device ID তৈরি করা (যদি আগে থেকে না থাকে)
+    let deviceId = localStorage.getItem('nexus_device_id');
+    if (!deviceId) {
+        deviceId = 'DEV-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        localStorage.setItem('nexus_device_id', deviceId);
+    }
+
+    return { deviceName, deviceId };
+}
+
+
+// --- Result Section: Search & Filter Logic ---
+document.addEventListener('DOMContentLoaded', () => {
+    const searchResultInput = document.getElementById('searchResult');
+    const resultTabs = document.querySelectorAll('#results-section .lb-tab');
+
+    if (searchResultInput) {
+        searchResultInput.addEventListener('input', applyResultsFilter);
+    }
+
+    resultTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            resultTabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            applyResultsFilter();
+        });
     });
 });
 
+function applyResultsFilter() {
+    const searchTerm = (document.getElementById('searchResult').value || '').toLowerCase();
+    const activeTab = document.querySelector('#results-section .lb-tab.active');
+    const filterType = activeTab ? activeTab.getAttribute('data-filter') : 'all';
+
+    const filteredResults = appState.results.filter(match => {
+        const matchesSearch = match.title.toLowerCase().includes(searchTerm) || 
+                              (match.id && match.id.toLowerCase().includes(searchTerm));
         
-       
-       // আগের copyToClipboard ফাংশনটি ডিলিট করে এটি বসান
+        let matchesTab = true;
+        if (filterType !== 'all') {
+            const matchCategory = (match.category || '').toLowerCase();
+            // This part checks if the match category matches the tab's data-filter
+            matchesTab = matchCategory === filterType || matchCategory.includes(filterType);
+        }
+        return matchesSearch && matchesTab;
+    });
+
+    renderFilteredResults(filteredResults);
+}
 
 
+function renderFilteredResults(filteredArray) {
+    // অরিজিনাল ডাটা ব্যাকআপ রেখে শুধু UI আপডেট করার ট্রিক
+    const originalResults = appState.results;
+    appState.results = filteredArray;
+    renderResults(); 
+    appState.results = originalResults;
+}
 
-function copyToClipboard(text) {
-    if (!text) return;
-
-    // Telegram Haptic Feedback
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-        window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+// --- Prize Pool Modal Helper ---
+function openPrizePoolModalById(matchId) {
+    const match = appState.results.find(m => m.id === matchId) || appState.matches.find(m => m.id === matchId);
+    if(match) {
+        openPrizePoolModal(match);
     }
+}
 
-    // Modern API (Android/Chrome)
-    if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).catch(() => {
-            fallbackCopyTextToClipboard(text);
-        });
+// ==========================================
+// 🌟 PREMIUM BANNER SLIDER LOGIC 
+// ==========================================
+let bannerCurrentIndex = 0;
+let bannerIntervalTimer;
+
+function initPremiumBanners(banners) {
+    const sliderContainer = document.getElementById('premiumBannerSlider');
+    const slidesWrapper = document.getElementById('bannerSlidesWrapper');
+    const indicatorsWrapper = document.getElementById('bannerIndicators');
+    
+    if(!banners || banners.length === 0) {
+        sliderContainer.style.display = 'none';
+        return;
+    }
+    
+    // চেক করুন বর্তমানে কোন সেকশন একটিভ
+    const isPlaySection = appState.currentSection === 'play';
+    const isMatchListActive = document.getElementById('matchListView')?.style.display === 'block';
+    
+    // শুধুমাত্র Play সেকশনের মেইন পেজেই ব্যানার দেখাবে
+    if (isPlaySection && !isMatchListActive) {
+        sliderContainer.style.display = 'block';
     } else {
-        fallbackCopyTextToClipboard(text); // iOS / iPhone / Older Android
+        sliderContainer.style.display = 'none';
     }
+    
+    slidesWrapper.innerHTML = '';
+
+    indicatorsWrapper.innerHTML = '';
+    
+    banners.forEach((banner, index) => {
+        // ১. স্লাইড তৈরি
+        const slide = document.createElement('div');
+        slide.className = `premium-slide ${index === 0 ? 'active' : ''}`;
+        
+        const imgHTML = `<img src="${banner.imageUrl}" alt="Promo Banner" loading="lazy">`;
+        // যদি টার্গেট লিঙ্ক থাকে, তাহলে ছবিতে ক্লিক করলে লিঙ্কে নিয়ে যাবে
+        if(banner.targetUrl) {
+            slide.innerHTML = `<a href="${banner.targetUrl}" target="_blank">${imgHTML}</a>`;
+        } else {
+            slide.innerHTML = imgHTML;
+        }
+        slidesWrapper.appendChild(slide);
+        
+        // ২. ডটস (Indicator) তৈরি
+        const dot = document.createElement('div');
+        dot.className = `indicator-dot ${index === 0 ? 'active' : ''}`;
+        dot.onclick = () => switchBannerSlide(index);
+        indicatorsWrapper.appendChild(dot);
+    });
+    
+    // অটো-প্লে শুরু (৪ সেকেন্ড পরপর)
+    startBannerRotation(banners.length);
 }
 
-// স্পেশাল ফলব্যাক (সব ডিভাইসে কাজ করার জন্য)
-function fallbackCopyTextToClipboard(text) {
-    var textArea = document.createElement("textarea");
-    textArea.value = text;
+function switchBannerSlide(index) {
+    const slides = document.querySelectorAll('.premium-slide');
+    const dots = document.querySelectorAll('.indicator-dot');
     
-    // স্ক্রিন যেন লাফিয়ে না ওঠে তাই Fixed
-    textArea.style.top = "0";
-    textArea.style.left = "0";
-    textArea.style.position = "fixed";
-    textArea.style.opacity = "0"; // লুকানো থাকবে
-
-    document.body.appendChild(textArea);
+    if(slides.length === 0) return;
     
-    // iOS Safari Fix (Textarea সিলেক্ট করা)
-    textArea.focus();
-    textArea.select();
-    textArea.setSelectionRange(0, 99999);
-
-    try {
-        document.execCommand('copy');
-    } catch (err) {
-        console.error('Fallback Copy failed', err);
-    }
-
-    document.body.removeChild(textArea);
+    slides.forEach(s => s.classList.remove('active'));
+    dots.forEach(d => d.classList.remove('active'));
+    
+    slides[index].classList.add('active');
+    dots[index].classList.add('active');
+    bannerCurrentIndex = index;
 }
+
+function startBannerRotation(totalSlides) {
+    clearInterval(bannerIntervalTimer);
+    if(totalSlides <= 1) return; // ১টি স্লাইড হলে অটো-প্লে দরকার নেই
+    
+    bannerIntervalTimer = setInterval(() => {
+        let nextIndex = (bannerCurrentIndex + 1) % totalSlides;
+        switchBannerSlide(nextIndex);
+    }, 4000); // 4 Seconds
+}
+
+// ফায়ারবেস থেকে রিয়েল-টাইমে ব্যানার লোড করা
+database.ref('banners').on('value', snapshot => {
+    let bannersArray = [];
+    snapshot.forEach(child => {
+        bannersArray.push(child.val());
+    });
+    // নতুন আপলোড করা ব্যানার আগে দেখাতে চাইলে Array উল্টে দিন
+    initPremiumBanners(bannersArray.reverse());
+});
+
+// Open/Close Task Full Page Section
+function openDailyTask() {
+    let taskSection = document.getElementById('daily-task-section');
+    taskSection.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Disable background scrolling
+}
+
+function closeDailyTask() {
+    let taskSection = document.getElementById('daily-task-section');
+    taskSection.style.animation = 'slideInTask 0.3s cubic-bezier(0.4, 0, 0.2, 1) reverse forwards';
+    setTimeout(() => {
+        taskSection.style.display = 'none';
+        taskSection.style.animation = 'slideInTask 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards'; // Reset animation
+        document.body.style.overflow = 'auto';
+    }, 300);
+}
+
+// Category Tabs Functionality
+document.querySelectorAll('.task-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        // Remove active class from all tabs
+        document.querySelectorAll('.task-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+
+        let filter = this.getAttribute('data-filter');
+        let cards = document.querySelectorAll('.modern-task-card');
+
+        cards.forEach(card => {
+            if(filter === 'all') {
+                card.style.display = 'flex';
+            } else if (card.getAttribute('data-status') === filter) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+
+// Task Claim Animation Logic
+function claimTask(btn) {
+    let card = btn.closest('.modern-task-card');
+    
+    // Add loading state
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.style.animation = 'none';
+    btn.style.pointerEvents = 'none';
+    
+    // Simulate API Call / Processing Delay
+    setTimeout(() => {
+        // Update Card Status to Completed
+        card.classList.remove('ready');
+        card.classList.add('completed');
+        card.setAttribute('data-status', 'completed');
+        
+        let actionDiv = card.querySelector('.task-action');
+        actionDiv.innerHTML = '<button class="task-btn-modern done-btn" disabled><i class="fas fa-check"></i> Done</button>';
+        
+        // Example: Update coin balance dynamically
+        let currentBalance = parseInt(document.getElementById('taskCoinBalance').innerText.replace(/,/g, ''));
+        document.getElementById('taskCoinBalance').innerText = (currentBalance + 100).toLocaleString();
+
+        // Re-filter if user is currently on the "Pending" tab
+        let activeTab = document.querySelector('.task-tab.active').getAttribute('data-filter');
+        if(activeTab === 'pending') {
+            card.style.opacity = '0';
+            setTimeout(() => { card.style.display = 'none'; card.style.opacity = '1'; }, 300);
+        }
+    }, 800);
+}
+
+</script>
+<div class="modal-overlay" id="maintenanceModal" style="z-index: 100000; background: #0f172a;">
+    <div class="modal" style="text-align: center; border: 1px solid #f59e0b;">
+        <div style="font-size: 50px; color: #f59e0b; margin-bottom: 20px;">
+            <i class="fas fa-tools"></i>
+        </div>
+        <h2 style="color: white; margin-bottom: 10px;">SYSTEM UPDATE</h2>
+        
+        <p style="color: var(--gray); margin-bottom: 20px;">
+            The app is currently under maintenance for upgrades. We will be back online shortly. Please wait...
+        </p>
+
+        <button onclick="window.Telegram.WebApp.close()" class="join-btn" style="background: #3b82f6; width: 100%;">Close App</button>
+    </div>
+</div>
+
+
+<div class="modal-overlay" id="banModal" style="z-index: 9999; background: #0f172a;">
+    <div class="modal" style="text-align: center; border: 1px solid #ef4444;">
+        <div style="font-size: 50px; color: #ef4444; margin-bottom: 20px;">
+            <i class="fas fa-user-slash"></i>
+        </div>
+        <h2 style="color: #ef4444; margin-bottom: 10px;">ACCOUNT BANNED</h2>
+        
+        <p style="color: var(--gray); margin-bottom: 15px;">
+            Your account has been suspended by the admin.
+        </p>
+
+        <div style="background: rgba(239, 68, 68, 0.1); padding: 15px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.3);">
+            <div style="font-size: 12px; color: #ef4444; font-weight: bold; text-transform: uppercase;">Ban Reason:</div>
+            <div id="banReasonDisplay" style="color: white; font-weight: 500; margin-top: 5px;">
+                </div>
+        </div>
+        
+        <br>
+        <button onclick="window.Telegram.WebApp.close()" class="join-btn" style="background: #334155; width: 100%;">Close App</button>
+    </div>
+</div>
+
+<audio id="ldMusicPlayer" loop></audio>
+
+
+
+
+
+</body>
+
+    
+</html>
