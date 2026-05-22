@@ -1,3 +1,5 @@
+alert("Init Data: " + tg.initData);
+
 const tg = window.Telegram.WebApp;
 tg.expand();
 tg.enableClosingConfirmation();
