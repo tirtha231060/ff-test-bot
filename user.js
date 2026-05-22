@@ -1060,103 +1060,45 @@ rulesBtn.addEventListener('click', () => {
 
             // UPDATED: Redeem Code Logic
             
-            applyRedeemBtn.addEventListener('click', () => {
+            // user.js এর applyRedeemBtn ইভেন্ট লিসেনার পরিবর্তন করুন:
+applyRedeemBtn.addEventListener('click', async () => {
     const codeInput = document.getElementById('promoCodeInput');
     const code = codeInput.value.trim();
 
-    if (!code) {
-        alert("Please enter a code.");
-        return;
-    }
+    if (!code) return alert("Please enter a code.");
 
     applyRedeemBtn.disabled = true;
     applyRedeemBtn.textContent = "Processing...";
 
-    database.ref('redeemCodes').orderByChild('code').equalTo(code).once('value')
-        .then(snapshot => {
-            if (!snapshot.exists()) {
-                throw new Error("Invalid Redeem Code");
-            }
+    try {
+        const response = await fetch(CLOUDFLARE_WORKER_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                initData: tg.initData,
+                action: "redeem-code",
+                code: code
+            })
+        });
 
-            const id = Object.keys(snapshot.val())[0];
-            const data = snapshot.val()[id];
+        const result = await response.json();
 
-            // ১. চেক করা কোড অ্যাক্টিভ কিনা
-            if (data.status !== 'active') {
-                throw new Error("This code is inactive.");
-            }
-
-            // ২. চেক করা লিমিট শেষ কিনা
-            const currentUsers = data.currentUsers || 0;
-            const maxUsers = data.maxUsers || 1; 
-
-            if (currentUsers >= maxUsers) {
-                throw new Error("This code limit has been reached (Full).");
-            }
-
-            // ৩. চেক করা ইউজার আগে ব্যবহার করেছে কিনা
-            if (data.usageLogs) {
-                const alreadyUsed = Object.values(data.usageLogs).some(log => log.userId == appState.userId);
-                if (alreadyUsed) {
-                    throw new Error("You have already used this code.");
-                }
-            }
-
-            // --- সব ঠিক থাকলে ব্যালেন্স অ্যাড এবং লগ তৈরি ---
-            
-            const updates = {};
-            const now = Date.now();
-
-            // A. কোডের ডাটা আপডেট (Current User + 1 এবং Log)
-            updates[`/redeemCodes/${id}/currentUsers`] = currentUsers + 1;
-            
-            const newLogKey = database.ref(`redeemCodes/${id}/usageLogs`).push().key;
-            updates[`/redeemCodes/${id}/usageLogs/${newLogKey}`] = {
-                userId: appState.userId,
-                userName: appState.currentUser.firstName + " " + (appState.currentUser.lastName || ""),
-                userUsername: appState.currentUser.username || "n/a",
-                date: now
-            };
-
-            // B. ট্রানজেকশন হিস্ট্রি আপডেট
-            const newTxnKey = database.ref('transactions').push().key;
-            updates[`/transactions/${newTxnKey}`] = {
-                userId: appState.userId,
-                type: 'deposit',
-                amount: data.amount,
-                date: now,
-                status: 'success',
-                method: 'Redeem Code',
-                title: `Redeemed: ${code}`
-            };
-
-            // C. ইউজারের ব্যালেন্স আপডেট
-            return database.ref('users/' + appState.userId).once('value').then(userSnap => {
-                const currentBal = parseFloat(userSnap.val()?.balance || 0);
-                const newBal = currentBal + parseFloat(data.amount);
-                const totalDep = parseFloat(userSnap.val()?.totalDeposit || 0) + parseFloat(data.amount);
-
-                updates[`/users/${appState.userId}/balance`] = newBal;
-                updates[`/users/${appState.userId}/totalDeposit`] = totalDep;
-
-                return database.ref().update(updates);
-            });
-        })
-        .then(() => {
+        if (response.ok && result.success) {
             alert("Success! Balance Added.");
             redeemModal.classList.remove('active');
             codeInput.value = "";
-            if(typeof loadRedeemHistory === 'function') loadRedeemHistory();
             loadUserProfile(); // ব্যালেন্স রিফ্রেশ
-        })
-        .catch(error => {
-            alert(error.message);
-        })
-        .finally(() => {
-            applyRedeemBtn.disabled = false;
-            applyRedeemBtn.textContent = "Apply Code";
-        });
+        } else {
+            alert("❌ " + (result.error || "Failed to redeem code."));
+        }
+    } catch (error) {
+        alert("Network error!");
+    } finally {
+        applyRedeemBtn.disabled = false;
+        applyRedeemBtn.textContent = "Apply Code";
+    }
 });
+
 
 
             joinTypeSelect.addEventListener('change', updatePlayerInputs);
