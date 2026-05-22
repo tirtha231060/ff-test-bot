@@ -1,12 +1,15 @@
-alert("Init Data: " + tg.initData);
-
+// ১. আগে Telegram WebApp ভেরিয়েবলটি তৈরি করুন (const ব্যবহার করে)
 const tg = window.Telegram.WebApp;
 tg.expand();
 tg.enableClosingConfirmation();
 
-// আপনার ক্লাউডফ্লেয়ার ওয়ার্কারের আসল URL এখানে বসাবেন
+// ২. ডিবাগিং অ্যালার্ট (এখন কমেন্ট করা আছে, ইউজাররা এটি আর দেখতে পাবে না)
+// alert("Init Data: " + tg.initData);
+
+// আপনার ক্লাউডফ্লেয়ার ওয়ার্কারের আসল URL
 const WORKER_URL = "https://polished-disk-2b4e.tirtharoyvuson.workers.dev/"; 
 
+// ৩. গ্লোবাল অ্যাপ স্টেট (আধুনিক let ব্যবহার করা হলো)
 let appState = {
     currentUser: null,
     userId: null,
@@ -32,6 +35,7 @@ let appState = {
     darkMode: false,
     walletBalance: 0
 };
+
 
 // --- সিকিউর টেলিগ্রাম অটো লগইন ফাংশন ---
 async function initSecureTelegramAuth() {
